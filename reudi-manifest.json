@@ -1,0 +1,23 @@
+{
+  "name": "Reudi Field",
+  "short_name": "Reudi Field",
+  "description": "MiniRUEDI gas analysis, groundwater monitoring and borehole volume calculator for field hydrogeologists.",
+  "start_url": "./reudi-field.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#061229",
+  "theme_color": "#061229",
+  "lang": "en",
+  "categories": ["utilities", "productivity", "science"],
+  "icons": [
+    { "src": "reudi-icon-192.png",          "sizes": "192x192",   "type": "image/png", "purpose": "any" },
+    { "src": "reudi-icon-192-maskable.png", "sizes": "192x192",   "type": "image/png", "purpose": "maskable" },
+    { "src": "reudi-icon-512.png",          "sizes": "512x512",   "type": "image/png", "purpose": "any" },
+    { "src": "reudi-icon-512-maskable.png", "sizes": "512x512",   "type": "image/png", "purpose": "maskable" },
+    { "src": "reudi-icon-1024.png",         "sizes": "1024x1024", "type": "image/png", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Gas Analysis", "short_name": "REUDI", "url": "./reudi-field.html#gasanalysis", "icons": [{ "src": "reudi-icon-192.png", "sizes": "192x192" }] },
+    { "name": "GW Levels",    "short_name": "GW Levels", "url": "./reudi-field.html#gwlevels",    "icons": [{ "src": "reudi-icon-192.png", "sizes": "192x192" }] }
+  ]
+}
