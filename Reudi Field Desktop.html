@@ -1,204 +1,85 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reudi Field</title>
-    
-    <!-- PWA Meta Tags -->
-    <meta name="description" content="Professional field calculator for hydrogeologists to calculate borehole volumes and track water level recovery">
-    <meta name="theme-color" content="#061229">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Reudi">
-    <link rel="manifest" href="reudi-manifest.json">
-    <link rel="apple-touch-icon" href="reudi-icon-192.png">
-    
-    <style>
-        /* ═══════════════════════════════════════════════
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reudi Field — Desktop</title>
+<meta name="theme-color" content="#061229">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+body{background:#061229}
+:root{--navy:#061229;--blue:#122d70;--blue2:#0d1f55;--purple:#7c3aed;--green:#16a34a;--red:#f5576c;--bg:#f1f5f9;--surface:#fff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;--hint:#94a3b8;--nav-h:0px;--top-h:52px;--safe-bottom:0px}
+#shell{position:fixed;inset:0;max-width:1280px;min-width:720px;margin:0 auto;display:grid;grid-template-rows:52px 1fr;grid-template-columns:80px 1fr;grid-template-areas:"topbar topbar" "nav content";background:#fff;overflow:hidden}
+#topbar{grid-area:topbar;background:linear-gradient(135deg,#061229,#0d1f55);display:flex;align-items:center;padding:0 20px;gap:14px}
+.top-bar-title .name{font-size:15px;font-weight:900;color:#fff;letter-spacing:.5px}
+.top-bar-title .sub{font-size:10px;font-weight:600;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:1px}
+#sidebar{grid-area:nav;background:#061229;display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:4px;overflow:hidden}
+#content{grid-area:content;overflow:hidden;background:#f1f5f9;position:relative}
+.screen{display:none;position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:24px 32px 40px;background:#f1f5f9}
+.screen.active{display:block}
+.nav-item{width:64px;padding:9px 0;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:none;background:transparent;cursor:pointer;color:rgba(255,255,255,.4);transition:background .15s,color .15s}
+.nav-item:hover{background:rgba(255,255,255,.08);color:rgba(255,255,255,.75)}
+.nav-item.active{background:rgba(255,255,255,.13);color:#fff}
+.nav-dot{display:none}
+.nav-icon{width:22px;height:22px;display:flex;align-items:center;justify-content:center}
+.nav-item svg{display:block}
+.nav-item svg *{stroke:rgba(255,255,255,.4)!important;transition:stroke .15s}
+.nav-item.active svg *{stroke:#fff!important}
+.nav-item:hover svg *{stroke:rgba(255,255,255,.75)!important}
+.nav-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:inherit;white-space:nowrap}
+.nav-item.active .nav-label{color:#fff}
+.nav-item.nav-hero .nav-icon{width:36px;height:36px;background:linear-gradient(135deg,#122d70,#0d1f55);border-radius:50%;box-shadow:0 2px 10px rgba(0,0,0,.5)}
+.nav-item.nav-hero svg *{stroke:#fff!important}
+#splash-screen{position:fixed;inset:0;z-index:9999;background:linear-gradient(160deg,#061229,#0d1f55 60%,#122d70);display:flex;flex-direction:column;justify-content:center;align-items:center;transition:opacity .5s}
+#splash-screen.fade-out{opacity:0;pointer-events:none}
+.splash-logo{width:90px;height:90px;margin-bottom:14px}
+.splash-wordmark{display:flex;flex-direction:column;align-items:center}
+.splash-title-top{font-size:30px;font-weight:900;color:#fff;line-height:1}
+.splash-title-bottom{font-size:30px;font-weight:300;letter-spacing:8px;color:#93c5fd;line-height:1;text-indent:8px}
+.splash-divider{width:36px;height:2px;background:rgba(255,255,255,.25);margin:10px 0}
+.splash-subtitle{font-size:12px;color:rgba(255,255,255,.5);letter-spacing:1.5px;text-transform:uppercase}
+/* ═══════════════════════════════════════════════
            RESET & BASE
         ═══════════════════════════════════════════════ */
         *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 
-        :root {
-            --navy:   #061229;
-            --blue:   #122d70;
-            --blue2:  #0d1f55;
-            --purple: #7c3aed;
-            --green:  #16a34a;
-            --red:    #f5576c;
-            --bg:     #f1f5f9;
-            --surface:#ffffff;
-            --border: #e2e8f0;
-            --text:   #1e293b;
-            --muted:  #64748b;
-            --hint:   #94a3b8;
-            --nav-h:  56px;
-            --top-h:  56px;
-            --safe-bottom: env(safe-area-inset-bottom, 0px);
-        }
+        
 
-                html, body {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            -webkit-text-size-adjust: 100%;
-            -webkit-font-smoothing: antialiased;
-        }
+                
 
         /* ═══════════════════════════════════════════════
            APP SHELL
         ═══════════════════════════════════════════════ */
-        .app-shell {
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-            height: 100%;
-            max-width: 480px;
-            margin: 0 auto;
-            background: var(--surface);
-            position: relative;
-            box-shadow: 0 0 40px rgba(0,0,0,0.18);
-        }
+        
 
         /* Top bar */
-        .top-bar {
-            flex-shrink: 0;
-            height: var(--top-h);
-            background: linear-gradient(135deg, var(--navy), var(--blue2));
-            display: flex;
-            align-items: center;
-            padding: 0 16px;
-            gap: 12px;
-            z-index: 500;
-            position: sticky;
-            top: 0;
-        }
-        .top-bar-logo {
-            width: 30px; height: 30px; flex-shrink: 0;
-        }
-        .top-bar-title {
-            flex: 1;
-            min-width: 0;
-        }
-        .top-bar-title .name {
-            font-size: 15px; font-weight: 800;
-            color: white; letter-spacing: -0.3px; line-height: 1;
-        }
-        .top-bar-title .sub {
-            font-size: 9px; font-weight: 400;
-            color: rgba(255,255,255,0.6); letter-spacing: 1.5px;
-            text-transform: uppercase; margin-top: 2px;
-        }
-        .top-bar-bhid {
-            background: rgba(255,255,255,0.15);
-            border: 1.5px solid rgba(255,255,255,0.3);
-            border-radius: 8px;
-            padding: 6px 10px;
-            font-size: 13px; font-weight: 600;
-            color: white; flex-shrink: 0;
-            min-width: 80px;
-        }
-        .top-bar-bhid::placeholder { color: rgba(255,255,255,0.5); }
-        .top-bar-bhid:focus { outline: none; border-color: rgba(255,255,255,0.7); }
-        .top-bar-save {
-            background: rgba(255,255,255,0.2);
-            border: 1.5px solid rgba(255,255,255,0.4);
-            border-radius: 8px;
-            padding: 6px 12px;
-            font-size: 13px; font-weight: 700;
-            color: white; cursor: pointer; flex-shrink: 0;
-            -webkit-tap-highlight-color: transparent;
-            transition: background 0.15s;
-        }
-        .top-bar-save:active { background: rgba(255,255,255,0.35); }
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
 
         /* Scrollable content pane */
-        .screen {
-            overflow-y: auto;
-            overflow-x: hidden;
-            -webkit-overflow-scrolling: touch;
-            /* top-bar is sticky so screen scrolls under it */
-            padding: 16px 16px calc(var(--nav-h) + var(--safe-bottom) + 16px);
-            display: none;
-            background: var(--bg);
-            /* Fill viewport minus top-bar, with fixed nav at bottom */
-            position: fixed;
-            top: var(--top-h);
-            left: 50%;
-            transform: translateX(-50%);
-            width: 100%;
-            max-width: 480px;
-            bottom: calc(var(--nav-h) + var(--safe-bottom));
-            box-sizing: border-box;
-        }
-        .screen.active { display: block; }
+        
+        
 
         /* Bottom navigation */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 100%;
-            max-width: 480px;
-            height: calc(var(--nav-h) + var(--safe-bottom));
-            padding-bottom: var(--safe-bottom);
-            background: var(--surface);
-            border-top: 1px solid var(--border);
-            display: flex;
-            z-index: 1000;
-            overflow: hidden;
-            box-sizing: border-box;
-        }
-        .nav-item {
-            flex: 1 1 0;
-            min-width: 0;
-            max-width: 20%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 2px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 5px 2px;
-            overflow: hidden;
-            -webkit-tap-highlight-color: transparent;
-            transition: opacity 0.15s;
-        }
-        .nav-item:active { opacity: 0.6; }
-        .nav-icon {
-            width: 22px; height: 22px;
-            display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0;
-        }
+        
+        
+        
+        
         .nav-icon svg { width: 20px; height: 20px; flex-shrink: 0; }
-        .nav-label {
-            font-size: 8px; font-weight: 600;
-            text-transform: uppercase; letter-spacing: 0.2px;
-            color: var(--hint);
-            transition: color 0.2s;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 100%;
-        }
-        .nav-item.active .nav-label { color: var(--navy); }
-        .nav-item.active .nav-icon svg path,
-        .nav-item.active .nav-icon svg circle,
-        .nav-item.active .nav-icon svg rect { stroke: var(--navy); }
-        .nav-dot {
-            width: 4px; height: 4px; border-radius: 50%;
-            background: var(--navy);
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-        .nav-item.active .nav-dot { opacity: 1; }
+        
+        
+        
+        
+        
         @keyframes badgePulse {
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.6; transform: scale(1.3); }
@@ -274,18 +155,25 @@
         .btn-full    { width: 100%; }
         .btn-row     { display: flex; gap: 5px; flex-wrap: nowrap; overflow: visible; }
 
-
-
         /* ── Sample panels ───────────────────────────── */
         .sample-panel { display: none; }
         .sample-panel.active { display: block; }
 
         /* ── Sample sub-tabs ──────────────────────────── */
-        
-        
-        
-        
-        
+        .sample-subtab-bar { display:flex; gap:0; margin-bottom:16px; background:rgba(0,0,0,0.18); border-radius:12px; padding:4px; }
+        .sample-subtab{flex:1;padding:10px 8px;background:transparent;border:none;border-radius:9px;font-size:12px;font-weight:700;color:rgba(255,255,255,0.55);cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+        .sample-subtab:hover { background:rgba(255,255,255,0.15); color:white; }
+        .sample-subtab.active {
+            background:#fff; color:var(--navy);
+            border-color:#fff; box-shadow:0 2px 10px rgba(0,0,0,0.25);
+        }
+        .sample-subtab:hover:not(.active) {
+            background:rgba(255,255,255,0.14); color:rgba(255,255,255,0.85);
+            border-color:rgba(255,255,255,0.3);
+        }
+        .sample-subtab:hover:not(.active) {
+            background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.8);
+        }
         /* ── Chem method buttons ─────────────────────── */
         .chem-method-btn {
             padding:12px 8px; background:var(--bg);
@@ -321,23 +209,11 @@
         .stab-chip.pending  { background:var(--bg); color:var(--hint); border:1px solid var(--border); }
 
         /* ── Borehole hero nav tab ─────────────────────── */
-        .nav-item.nav-hero {
-            flex: 1 1 0;
-            overflow: hidden;
-        }
-        .nav-item.nav-hero .nav-icon {
-            width: 28px; height: 28px;
-            background: linear-gradient(135deg, var(--navy), var(--blue2));
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 2px 8px rgba(30,58,138,0.35);
-            flex-shrink: 0;
-        }
-        .nav-item.nav-hero .nav-icon svg { stroke: white; }
-        .nav-item.nav-hero.active .nav-icon {
-            box-shadow: 0 3px 12px rgba(30,58,138,0.55);
-        }
-        .nav-item.nav-hero .nav-label { font-weight: 800; color: var(--navy); }
+        
+        
+        
+        
+        
 
         /* ── Map panel ─────────────────────────────────── */
         .bh-map-panel {
@@ -665,31 +541,20 @@
         /* ═══════════════════════════════════════════════
            DESKTOP fallback — show app centred on wide screens
         ═══════════════════════════════════════════════ */
-        @media (min-width: 600px) {
-            body { background: linear-gradient(135deg, var(--navy) 0%, var(--blue2) 100%); }
-            html { overflow: auto; }
-            .app-shell { height: 812px; border-radius: 40px; overflow: hidden; }
-            .bottom-nav { border-radius: 0 0 40px 40px; }
-        }
+        
 
         /* ═══════════════════════════════════════════════
            SPLASH SCREEN
         ═══════════════════════════════════════════════ */
-        #splash-screen {
-            position: fixed; inset: 0;
-            background: linear-gradient(160deg, #061229 0%, #0d1f55 60%, #122d70 100%);
-            display: flex; flex-direction: column;
-            justify-content: center; align-items: center;
-            z-index: 10000; transition: opacity 0.6s ease-out;
-        }
-        #splash-screen.fade-out { opacity: 0; pointer-events: none; }
-        .splash-logo { width: 140px; height: 140px; margin-bottom: 24px; filter: drop-shadow(0 8px 24px rgba(0,0,0,0.35)); }
-        .splash-logo svg { width: 100%; height: 100%; }
-        .splash-wordmark { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-        .splash-title-top { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 28px; font-weight: 800; letter-spacing: -0.5px; color: white; line-height: 1; }
-        .splash-title-bottom { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 28px; font-weight: 300; letter-spacing: 8px; color: #93c5fd; line-height: 1; text-indent: 8px; }
-        .splash-divider { width: 120px; height: 1px; background: rgba(255,255,255,0.25); margin: 12px 0 8px; }
-        .splash-subtitle { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 10px; font-weight: 400; letter-spacing: 2.5px; color: rgba(255,255,255,0.55); text-transform: uppercase; }
+        
+        
+        
+        
+        
+        
+        
+        
+        
 
         /* ── Storage & confirmation system ── */
         .toast {
@@ -902,16 +767,7 @@
         .cloud-row { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 8px; }
 
         /* Bottom nav text — prevent overflow */
-        .nav-label {
-            font-size: 8px; font-weight: 600;
-            text-transform: uppercase; letter-spacing: 0.2px;
-            color: var(--hint);
-            transition: color 0.2s;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 100%;
-        }
+        
 
         /* Global search */
         .global-search-wrap { position: relative; margin-bottom: 10px; }
@@ -935,26 +791,7 @@
             border-radius: 0 10px 10px 0;
         }
 
-        .sample-subtab-bar {
-            display:flex; gap:0; margin-bottom:16px;
-            background:rgba(0,0,0,0.18); border-radius:12px; padding:4px;
-        }
-        .sample-subtab {
-            flex:1; padding:9px 6px;
-            background:transparent; border:none;
-            border-radius:9px; font-size:11.5px; font-weight:700;
-            color:rgba(255,255,255,0.55); cursor:pointer;
-            transition:background 0.18s, color 0.18s, box-shadow 0.18s;
-            letter-spacing:0.2px; white-space:nowrap;
-        }
-        .sample-subtab:hover:not(.active) {
-            background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.8);
-        }
-        .sample-subtab.active {
-            background:#fff; color:var(--navy);
-            box-shadow:0 2px 8px rgba(0,0,0,0.22);
-        }
-        </style>
+</style>
 </head>
 <body>
     <!-- Splash Screen -->
@@ -1011,11 +848,9 @@
         <div class="splash-subtitle">MiniRUEDI Gas Analysis &amp; GW Monitoring</div>
     </div>
     
-    <div class="app-shell">
-
-        <!-- TOP BAR (shown on calculator tab only - handled via JS) -->
-        <div class="top-bar" id="topBar">
-            <div class="splash-logo" style="width:32px;height:32px;margin:0;filter:none;">
+<div id="shell">
+  <header id="topbar" class="top-bar">
+    <div class="splash-logo" style="width:32px;height:32px;margin:0;filter:none;">
                 <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
                     <defs>
                         <linearGradient id="tbDropG" x1="10%" y1="0%" x2="30%" y2="100%">
@@ -1039,14 +874,40 @@
                           fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
                 </svg>
             </div>
-            <div class="top-bar-title">
-                <div class="name">REUDI FIELD</div>
-                <div class="sub" id="topBarSubtitle">Calculator</div>
-            </div>
-<!-- BH ID moved into calculator screen -->
-        </div>
-
-        <div id="screen-reudi" class="screen">
+    <div class="top-bar-title">
+      <div class="name">REUDI FIELD</div>
+      <div class="sub" id="topBarSubtitle">Boreholes</div>
+    </div>
+  </header>
+  <nav id="sidebar" class="bottom-nav"><nav class="bottom-nav">
+            <button class="nav-item haptic-btn" data-screen="reudi" onclick="switchScreen('reudi')">
+                <div class="nav-dot"></div>
+                <div class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 00-2 2v4"/><path d="M9 3h10a2 2 0 012 2v4"/><path d="M3 9a2 2 0 000 4"/><path d="M21 9a2 2 0 010 4"/><path d="M3 13v5a2 2 0 002 2h14a2 2 0 002-2v-5"/><circle cx="12" cy="13" r="3"/><path d="M12 7v3"/></svg></div>
+                <span class="nav-label">REUDI</span>
+            </button>
+            <button class="nav-item haptic-btn" data-screen="gwlevels" onclick="switchScreen('gwlevels')">
+                <div class="nav-dot"></div>
+                <div class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C8 7 4 10 4 14a8 8 0 0016 0c0-4-4-7-8-12z"/><line x1="12" y1="12" x2="12" y2="19"/></svg></div>
+                <span class="nav-label">Monitor</span>
+            </button>
+            <button class="nav-item nav-hero active haptic-btn" data-screen="boreholes" onclick="switchScreen('boreholes')">
+                <div class="nav-dot"></div>
+                <div class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="9"/><line x1="12" y1="15" x2="12" y2="22"/><path d="M4.93 4.93l4.24 4.24M14.83 14.83l4.24 4.24M2 12h7M15 12h7M4.93 19.07l4.24-4.24M14.83 9.17l4.24-4.24"/></svg></div>
+                <span class="nav-label">BH</span>
+            </button>
+            <button class="nav-item haptic-btn" data-screen="recovery" onclick="switchScreen('recovery')">
+                <div class="nav-dot"></div>
+                <div class="nav-icon" style="position:relative;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span id="recTimerBadge" style="display:none;position:absolute;top:-4px;right:-6px;width:8px;height:8px;background:#ef4444;border-radius:50%;border:1.5px solid white;animation:badgePulse 1.5s ease-in-out infinite;"></span></div>
+                <span class="nav-label">Sample</span>
+            </button>
+            <button class="nav-item haptic-btn" data-screen="logs" onclick="switchScreen('logs')">
+                <div class="nav-dot"></div>
+                <div class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+                <span class="nav-label">Logs</span>
+            </button>
+        </nav></nav>
+  <main id="content">
+    <div id="screen-reudi"      class="screen">
             <div id="reudiProjectTopBanner" style="background:linear-gradient(135deg,var(--navy),var(--blue2));border-radius:14px;padding:12px 14px;margin-bottom:10px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;">
                     <div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.7);margin-bottom:2px;">Active Project</div><div id="reudiTopProjectName" style="font-size:15px;font-weight:800;color:white;">No project selected</div></div>
@@ -1116,9 +977,7 @@
                 <button class="btn haptic-btn btn-full" onclick="_openNextBHModal()" style="background:linear-gradient(135deg,var(--navy),var(--blue2));color:white;font-size:13px;font-weight:700;padding:10px;margin-bottom:12px;">+ Next Borehole →</button>
             </div>
         </div>
-
-        <!-- ── CALCULATOR SCREEN ── -->
-        <div id="screen-calculator" class="screen">
+    <div id="screen-calculator" class="screen">
 
             <div class="main-grid">
 
@@ -1279,9 +1138,7 @@
 
             </div>
         </div>
-
-        <!-- ── GROUNDWATER LEVELS SCREEN ── -->
-        <div id="screen-gwlevels" class="screen">
+    <div id="screen-gwlevels"   class="screen">
             <!-- List view -->
             <div id="gw-list-view">
                 <!-- PROJECT BANNER -->
@@ -1416,10 +1273,7 @@
                 </div>
             </div>
         </div>
-
-
-        <!-- ── BOREHOLES SCREEN ── -->
-        <div id="screen-boreholes" class="screen active">
+    <div id="screen-boreholes"  class="screen active">
 
             <!-- PROJECT BANNER -->
             <div id="bhScreenProjectBanner" style="background:linear-gradient(135deg,var(--navy),var(--blue2));border-radius:14px;padding:12px 14px;margin-bottom:10px;">
@@ -1544,99 +1398,7 @@
                 </div>
                 <div id="bhListContainer"><div class="no-data">No boreholes yet.<br>Tap <strong>+ New BH</strong> to register a borehole.</div></div>
             </div>
-
-            <!-- Detail view -->
-            <div id="bh-detail-view" style="display:none;">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                    <button class="gw-back haptic-btn" onclick="showBHListView()">&#8592; Boreholes</button>
-                    <div style="display:flex;gap:6px;">
-                        <button class="btn btn-ghost btn-sm haptic-btn" onclick="openEditBoreholeModal()">Edit</button>
-                        <button class="btn btn-red btn-sm haptic-btn" onclick="deleteBorehole(activeBHId)">Delete</button>
-                    </div>
-                </div>
-                <div class="bh-detail-header">
-                    <div class="bh-detail-id" id="bhDetailId"></div>
-                    <div class="bh-detail-desc" id="bhDetailDesc"></div>
-                    <div class="bh-stat-row">
-                        <div class="bh-stat-box"><div class="bh-stat-val" id="bhStatDepth">—</div><div class="bh-stat-lbl">Depth (m)</div></div>
-                        <div class="bh-stat-box"><div class="bh-stat-val" id="bhStatDiam">—</div><div class="bh-stat-lbl">Ø (mm)</div></div>
-                        <div class="bh-stat-box"><div class="bh-stat-val" id="bhStatReadings">—</div><div class="bh-stat-lbl">GW Readings</div></div>
-                    </div>
-                </div>
-
-                <!-- Inner tabs: Info / GW / Logs / Recovery -->
-                <div class="bh-inner-tabs">
-                    <button class="bh-inner-tab active" onclick="switchBHTab('info')">Info</button>
-                    <button class="bh-inner-tab" onclick="switchBHTab('gw')">GW Levels</button>
-                    <button class="bh-inner-tab" onclick="switchBHTab('calclogs')">BH Logs</button>
-                    <button class="bh-inner-tab" onclick="switchBHTab('recovery')">Recovery</button>
-                </div>
-
-                <!-- Info tab -->
-                <div id="bh-tab-info" class="bh-inner-content active">
-                    <div class="section-card" id="bhInfoCard"></div>
-                </div>
-
-                <!-- GW Levels tab: quick reading form first, then summary -->
-                <div id="bh-tab-gw" class="bh-inner-content">
-                    <div id="bhGWQuickEntry" style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:12px;padding:14px;margin-bottom:10px;">
-                        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#1e40af;margin-bottom:10px;">Record Reading Now</div>
-                        <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:8px;">
-                            <div class="input-group" style="flex:1;margin-bottom:0;">
-                                <label>Depth to Water (m bTOC)</label>
-                                <input type="number" id="bhDetailGWDepth" step="0.001" placeholder="e.g. 4.250" inputmode="decimal"
-                                    style="font-size:18px;font-weight:700;padding:10px 12px;">
-                            </div>
-                            <button class="btn btn-primary haptic-btn" onclick="addBHDetailGWReading()" style="padding:10px 18px;font-size:14px;flex-shrink:0;">Add</button>
-                        </div>
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-                            <div class="input-group" style="margin-bottom:0;">
-                                <label style="font-size:11px;">Date / Time</label>
-                                <input type="datetime-local" id="bhDetailGWDate" style="font-size:12px;padding:7px 8px;">
-                            </div>
-                            <div class="input-group" style="margin-bottom:0;">
-                                <label style="font-size:11px;">Sampler</label>
-                                <input type="text" id="bhDetailGWSampler" placeholder="e.g. JR" style="font-size:12px;padding:7px 8px;" autocomplete="name">
-                            </div>
-                        </div>
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-                            <div class="input-group" style="margin-bottom:0;">
-                                <label style="font-size:11px;">Baro. (hPa)</label>
-                                <input type="number" id="bhDetailGWBaro" step="0.1" placeholder="1013.2" inputmode="decimal" style="font-size:12px;padding:7px 8px;" oninput="if(!this.value){}">
-                            </div>
-                            <div class="input-group" style="margin-bottom:0;">
-                                <label style="font-size:11px;">Air Temp (°C)</label>
-                                <input type="number" id="bhDetailGWAirTemp" step="0.1" placeholder="auto→baro" inputmode="decimal" style="font-size:12px;padding:7px 8px;" oninput="estimateBaroFromBHDetail()">
-                            </div>
-                        </div>
-                        <input type="text" id="bhDetailGWNotes" placeholder="Notes (optional)" style="width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;">
-                    </div>
-                    <div id="bhGWSummary" style="margin-bottom:10px;"></div>
-                    <button class="btn btn-ghost haptic-btn btn-full" onclick="linkBHToGWAndSwitch()" style="border-color:var(--navy);color:var(--navy);font-size:13px;">Open full GW Levels view →</button>
-                </div>
-
-                <!-- BH Logs tab -->
-                <div id="bh-tab-calclogs" class="bh-inner-content">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                        <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Linked Calculator Logs</div>
-                        <button class="btn btn-primary btn-sm haptic-btn" onclick="loadBHIntoCalculator()">New Log →</button>
-                    </div>
-                    <div id="bhLinkedLogs"><div class="no-data">📐<br>No calculator logs yet.<br><span style="font-size:12px;">Tap → Calculator from the Info tab.</span></div></div>
-                </div>
-
-                <!-- Recovery tab -->
-                <div id="bh-tab-recovery" class="bh-inner-content">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                        <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Linked Recovery Tests</div>
-                        <button class="btn btn-primary btn-sm haptic-btn" onclick="loadBHIntoRecovery()">New Test →</button>
-                    </div>
-                    <div id="bhLinkedRecovery"><div class="no-data">📈<br>No recovery tests yet.<br><span style="font-size:12px;">Tap → Recovery from the Info tab.</span></div></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ── RECOVERY SCREEN ── -->
-        <div id="screen-recovery" class="screen">
+    <div id="screen-recovery"   class="screen">
             <!-- PROJECT BANNER -->
             <div id="recoveryProjectTopBanner" style="background:linear-gradient(135deg,var(--navy),var(--blue2));border-radius:14px;padding:12px 14px;margin-bottom:10px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -2035,12 +1797,8 @@
         </div>
 
         <!-- ── GROUNDWATER LEVELS SCREEN ── -->
-            </div><!-- /samplePanelPurge -->
-
-
-        </div><!-- /screen-recovery -->
-
-        <div id="screen-logs" class="screen">
+            </div>
+    <div id="screen-logs"       class="screen">
             <h1>Saved Logs</h1>
             <div class="storage-bar-wrap" id="storageBarWrap">
                 <div class="storage-bar-top">
@@ -2297,38 +2055,9 @@
                 <div id="chemLogsContainer"><div class="no-data">No chemistry sessions saved yet.</div></div>
             </div>
             </div>
+  </main>
+</div>
 
-        <!-- ── BOTTOM NAV ── -->
-        <nav class="bottom-nav">
-            <button class="nav-item haptic-btn" data-screen="reudi" onclick="switchScreen('reudi')">
-                <div class="nav-dot"></div>
-                <div class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 00-2 2v4"/><path d="M9 3h10a2 2 0 012 2v4"/><path d="M3 9a2 2 0 000 4"/><path d="M21 9a2 2 0 010 4"/><path d="M3 13v5a2 2 0 002 2h14a2 2 0 002-2v-5"/><circle cx="12" cy="13" r="3"/><path d="M12 7v3"/></svg></div>
-                <span class="nav-label">REUDI</span>
-            </button>
-            <button class="nav-item haptic-btn" data-screen="gwlevels" onclick="switchScreen('gwlevels')">
-                <div class="nav-dot"></div>
-                <div class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C8 7 4 10 4 14a8 8 0 0016 0c0-4-4-7-8-12z"/><line x1="12" y1="12" x2="12" y2="19"/></svg></div>
-                <span class="nav-label">Monitor</span>
-            </button>
-            <button class="nav-item nav-hero active haptic-btn" data-screen="boreholes" onclick="switchScreen('boreholes')">
-                <div class="nav-dot"></div>
-                <div class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="9"/><line x1="12" y1="15" x2="12" y2="22"/><path d="M4.93 4.93l4.24 4.24M14.83 14.83l4.24 4.24M2 12h7M15 12h7M4.93 19.07l4.24-4.24M14.83 9.17l4.24-4.24"/></svg></div>
-                <span class="nav-label">BH</span>
-            </button>
-            <button class="nav-item haptic-btn" data-screen="recovery" onclick="switchScreen('recovery')">
-                <div class="nav-dot"></div>
-                <div class="nav-icon" style="position:relative;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span id="recTimerBadge" style="display:none;position:absolute;top:-4px;right:-6px;width:8px;height:8px;background:#ef4444;border-radius:50%;border:1.5px solid white;animation:badgePulse 1.5s ease-in-out infinite;"></span></div>
-                <span class="nav-label">Sample</span>
-            </button>
-            <button class="nav-item haptic-btn" data-screen="logs" onclick="switchScreen('logs')">
-                <div class="nav-dot"></div>
-                <div class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
-                <span class="nav-label">Logs</span>
-            </button>
-        </nav>
-
-
-    </div><!-- /.app-shell -->
 
 
     <!-- NEW BOREHOLE MODAL -->
@@ -2648,7 +2377,9 @@
     </div>
 
 
-    <script>
+    
+<script>
+
         // Build metadata — update BUILD_DATE on each release to bust SW cache automatically
         const BUILD_DATE = '2025-03-25';
         const BUILD_VERSION = 'v16';
@@ -2675,6 +2406,10 @@
         let recoveryMeasurements = [];
         let savedRecoveryTests = JSON.parse(localStorage.getItem('recoveryTests')) || [];
         let testStartTime = null;
+        let boreholes=[],gwPoints=[],projects=[];
+        let activeProject=null,activeBorehole=null;
+        let savedGasRecords=[],chemMethod='single';
+        chemSelectedParams=[],chemReadings=[];
         
         function switchScreen(name) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -3865,10 +3600,10 @@
             clearTimeout(_calcDebounceTimer);
             _calcDebounceTimer = setTimeout(calculateAndDraw, 50);
         }
-        diameterInput.addEventListener('input', calculateAndDrawDebounced);
-        wellDepthInput.addEventListener('input', calculateAndDrawDebounced);
-        waterLevelInput.addEventListener('input', calculateAndDrawDebounced);
-        standUpInput.addEventListener('input', calculateAndDrawDebounced);
+        if(diameterInput)  diameterInput.addEventListener('input',calculateAndDrawDebounced);
+        if(wellDepthInput) wellDepthInput.addEventListener('input',calculateAndDrawDebounced);
+        if(waterLevelInput)waterLevelInput.addEventListener('input',calculateAndDrawDebounced);
+        if(standUpInput)   standUpInput.addEventListener('input',calculateAndDrawDebounced);
         
         // Apply persisted unit on startup
         (function applyPersistedUnit() {
@@ -3922,7 +3657,7 @@
         //  GROUNDWATER LEVELS MODULE
         // =============================================
 
-        let gwPoints = JSON.parse(localStorage.getItem('gwPoints')) || [];
+        gwPoints = JSON.parse(localStorage.getItem('gwPoints')) || [];
         let activeGWPointId = null;
 
         function saveGWPoints() {
@@ -6357,8 +6092,8 @@
         // =============================================
         //  PROJECT SYSTEM
         // =============================================
-        let projects = JSON.parse(localStorage.getItem('bmProjects')) || [];
-        let activeProject = null; // { id, name, client, ref, notes }
+        projects = JSON.parse(localStorage.getItem('bmProjects')) || [];
+        activeProject = null; // { id, name, client, ref, notes }
 
         function saveProjects() {
             safeSave('bmProjects', projects);
@@ -8249,7 +7984,7 @@
         // =============================================
         //  BOREHOLES — data model + CRUD
         // =============================================
-        let boreholes = JSON.parse(localStorage.getItem('boreholes') || '[]');
+        boreholes = JSON.parse(localStorage.getItem('boreholes') || '[]');
         let activeBHId = null;
         let _bhModalGPS = null;
 
@@ -9968,7 +9703,7 @@
 
 
         // ── Active Borehole global state ──────────────────────────
-        let activeBorehole = null;
+        activeBorehole = null;
 
         // Return-to state for BH creation flow from other tabs
         window._returnScreen = null;   // 'calculator' | 'recovery' | 'gwlevels' | 'chemistry'
@@ -10178,9 +9913,9 @@
             { id:'wl',    label:'WL (m bTOC)',       unit:'m'     },
             { id:'turb',  label:'Turbidity (NTU)',   unit:'NTU'   },
         ];
-        let chemMethod         = 'purge3';
-        let chemSelectedParams = ['temp','ph','ec','eh','wl'];
-        let chemReadings       = [];
+        chemMethod = 'purge3';
+        chemSelectedParams = ['temp','ph','ec','eh','wl'];
+        chemReadings = [];
         let chemTestStart      = null;
 
         function initChemPanel() {
@@ -10734,8 +10469,8 @@
             bg.addEventListener('click', e => { if (e.target === bg) bg.remove(); });
             document.body.appendChild(bg);
 
-            const input = document.getElementById('_manualBHInput');
-            // Show suggestions as user types
+            const input = bg.querySelector('#_manualBHInput');
+            if(!input) return;
             input.addEventListener('input', () => {
                 const q = input.value.trim().toUpperCase();
                 const sugg = document.getElementById('_manualBHSuggestions');
@@ -11423,7 +11158,7 @@
 // =============================================
         //  GAS ANALYSIS — MiniRUEDI Field Sheet
         // =============================================
-        let savedGasRecords = JSON.parse(localStorage.getItem('gasRecords')) || [];
+        savedGasRecords = JSON.parse(localStorage.getItem('gasRecords')) || [];
         let editingGasId = null;
         let gasSequences = []; // array of {time, n, stdBefore, stdAfter, blankTaken}
 
@@ -12096,6 +11831,10 @@
         window.dismissReudiTip = dismissReudiTip;
         window.checkReudiFirstRun = checkReudiFirstRun;
 
-    </script>
+    
+
+        if('serviceWorker'in navigator){try{const sw=`const C='rfd1';self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.add(location.href)));self.skipWaiting();});self.addEventListener('fetch',e=>{if(/maps|googleapis|anthropic/.test(e.request.url))return;e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});`;navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'application/javascript'}))).catch(()=>{});}catch(e){}}
+
+</script>
 </body>
 </html>

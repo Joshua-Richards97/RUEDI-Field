@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'reudi-field-v1';
+const CACHE_VERSION = 'reudi-field-v20';
 const ASSETS = [
   './',
   './reudi-field.html',
