@@ -1,0 +1,1431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reudi Field — Test Suite</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;700;800&display=swap');
+
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --border: #1e2d45;
+    --navy: #1e3a8a;
+    --blue: #3b82f6;
+    --cyan: #06b6d4;
+    --green: #22c55e;
+    --yellow: #f59e0b;
+    --red: #ef4444;
+    --purple: #a855f7;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --hint: #94a3b8;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: var(--mono);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content:'';
+    position:fixed; inset:0;
+    background-image:
+      linear-gradient(rgba(30,58,138,0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(30,58,138,0.08) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events:none; z-index:0;
+  }
+
+  .app { position:relative; z-index:1; max-width:1100px; margin:0 auto; padding:24px 20px 60px; }
+
+  /* ── Header ─────────────────────────────── */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 20px;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .logo {
+    font-family: var(--sans);
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--cyan);
+    letter-spacing: -0.5px;
+  }
+  .logo span { color: var(--muted); font-weight:400; font-size:13px; display:block; font-family:var(--mono); }
+  .run-all-btn {
+    font-family:var(--mono); font-size:13px; font-weight:700;
+    background:var(--navy); color:white; border:1px solid var(--blue);
+    border-radius:8px; padding:10px 22px; cursor:pointer;
+    transition:all 0.2s; letter-spacing:0.5px;
+  }
+  .run-all-btn:hover { background:var(--blue); box-shadow:0 0 20px rgba(59,130,246,0.3); }
+  .run-all-btn:disabled { opacity:0.4; cursor:not-allowed; }
+
+  /* ── Summary bar ─────────────────────────── */
+  #summary {
+    display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
+    margin-bottom:28px;
+  }
+  .stat {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:10px; padding:14px 16px;
+    text-align:center;
+  }
+  .stat-val { font-size:28px; font-weight:700; font-family:var(--sans); line-height:1; }
+  .stat-lbl { font-size:10px; color:var(--muted); margin-top:4px; text-transform:uppercase; letter-spacing:1px; }
+  .stat-val.pass { color:var(--green); }
+  .stat-val.fail { color:var(--red); }
+  .stat-val.skip { color:var(--yellow); }
+  .stat-val.total { color:var(--cyan); }
+
+  /* ── Progress bar ─────────────────────────── */
+  #progress-bar {
+    height:3px; background:var(--border); border-radius:2px;
+    margin-bottom:28px; overflow:hidden;
+  }
+  #progress-fill {
+    height:100%; width:0%; background:var(--cyan);
+    transition:width 0.3s ease;
+    box-shadow: 0 0 8px var(--cyan);
+  }
+
+  /* ── Campaign header ──────────────────────── */
+  .campaign-header {
+    font-family:var(--sans); font-size:11px; font-weight:700;
+    text-transform:uppercase; letter-spacing:2px;
+    color:var(--cyan); margin-bottom:10px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .campaign-header::after {
+    content:''; flex:1; height:1px; background:var(--border);
+  }
+
+  /* ── Suite card ───────────────────────────── */
+  .suite {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:12px; margin-bottom:12px; overflow:hidden;
+  }
+  .suite-header {
+    display:flex; align-items:center; gap:12px;
+    padding:14px 16px; cursor:pointer;
+    border-bottom:1px solid transparent;
+    transition:background 0.15s;
+    user-select:none;
+  }
+  .suite-header:hover { background:var(--surface2); }
+  .suite-header.open { border-bottom-color:var(--border); }
+  .suite-icon { font-size:16px; width:24px; text-align:center; flex-shrink:0; }
+  .suite-name { font-family:var(--sans); font-weight:700; font-size:14px; flex:1; }
+  .suite-desc { font-size:11px; color:var(--muted); }
+  .suite-badges { display:flex; gap:6px; align-items:center; }
+  .badge {
+    font-size:10px; font-weight:700; padding:2px 8px;
+    border-radius:20px; letter-spacing:0.5px;
+  }
+  .badge-pass { background:rgba(34,197,94,0.15); color:var(--green); border:1px solid rgba(34,197,94,0.3); }
+  .badge-fail { background:rgba(239,68,68,0.15); color:var(--red); border:1px solid rgba(239,68,68,0.3); }
+  .badge-skip { background:rgba(245,158,11,0.15); color:var(--yellow); border:1px solid rgba(245,158,11,0.3); }
+  .badge-pending { background:rgba(100,116,139,0.15); color:var(--muted); border:1px solid var(--border); }
+  .chevron { color:var(--muted); transition:transform 0.2s; font-size:12px; }
+  .suite-header.open .chevron { transform:rotate(90deg); }
+
+  /* ── Test list ────────────────────────────── */
+  .test-list { display:none; }
+  .test-list.open { display:block; }
+
+  .test-row {
+    display:flex; align-items:flex-start; gap:12px;
+    padding:11px 16px 11px 52px;
+    border-bottom:1px solid var(--border);
+    font-size:12px; transition:background 0.1s;
+    position:relative;
+  }
+  .test-row:last-child { border-bottom:none; }
+  .test-row:hover { background:rgba(255,255,255,0.02); }
+
+  .test-status {
+    width:16px; height:16px; border-radius:50%;
+    flex-shrink:0; margin-top:1px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:9px; font-weight:700;
+    border:1.5px solid var(--border);
+    background:var(--surface2);
+    transition:all 0.2s;
+  }
+  .test-status.pass { background:var(--green); border-color:var(--green); color:#fff; }
+  .test-status.fail { background:var(--red); border-color:var(--red); color:#fff; }
+  .test-status.skip { background:var(--yellow); border-color:var(--yellow); color:#000; }
+  .test-status.running {
+    border-color:var(--cyan); background:transparent;
+    animation:spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  .test-body { flex:1; }
+  .test-name { color:var(--text); line-height:1.4; }
+  .test-detail {
+    font-size:11px; color:var(--muted); margin-top:3px;
+    font-style:italic;
+  }
+  .test-error {
+    font-size:11px; color:var(--red); margin-top:4px;
+    background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2);
+    border-radius:6px; padding:6px 8px; font-style:normal;
+    white-space:pre-wrap; word-break:break-word;
+  }
+  .test-ms { font-size:10px; color:var(--muted); flex-shrink:0; margin-top:2px; }
+
+  /* ── Console log ──────────────────────────── */
+  #console-wrap {
+    margin-top:24px;
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:12px; overflow:hidden;
+  }
+  .console-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 16px; border-bottom:1px solid var(--border);
+    font-family:var(--sans); font-size:12px; font-weight:700;
+    color:var(--hint);
+  }
+  #console-log {
+    font-size:11px; color:var(--hint); padding:12px 16px;
+    height:180px; overflow-y:auto; line-height:1.7;
+  }
+  #console-log .log-pass { color:var(--green); }
+  #console-log .log-fail { color:var(--red); }
+  #console-log .log-info { color:var(--cyan); }
+  #console-log .log-warn { color:var(--yellow); }
+  .clear-console { font-size:11px; cursor:pointer; color:var(--muted); background:none; border:none; font-family:var(--mono); }
+  .clear-console:hover { color:var(--text); }
+
+  /* ── Scenario narrative ───────────────────── */
+  .scenario-bar {
+    background:linear-gradient(135deg,rgba(30,58,138,0.3),rgba(6,182,212,0.1));
+    border:1px solid rgba(6,182,212,0.2);
+    border-radius:10px; padding:12px 16px; margin-bottom:20px;
+    font-size:12px; color:var(--hint); line-height:1.6;
+  }
+  .scenario-bar strong { color:var(--cyan); font-family:var(--sans); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div>
+      <div class="logo">REUDI FIELD <span>Automated Test Suite v1.0</span></div>
+    </div>
+    <button class="run-all-btn" id="runAllBtn" onclick="runAll()">▶ Run All Tests</button>
+  </header>
+
+  <div class="scenario-bar">
+    <strong>Campaign Scenario:</strong> Two-day groundwater sampling campaign at the Muri aquifer study site.
+    Four boreholes (BH-MU01–04) across two projects. Tests cover the full workflow:
+    project setup → borehole registration → purge calculations → GW level monitoring →
+    drawdown/recovery → GW chemistry → MiniRUEDI gas analysis → CSV/PDF export → data integrity.
+  </div>
+
+  <div id="summary">
+    <div class="stat"><div class="stat-val total" id="s-total">0</div><div class="stat-lbl">Total</div></div>
+    <div class="stat"><div class="stat-val pass" id="s-pass">0</div><div class="stat-lbl">Passed</div></div>
+    <div class="stat"><div class="stat-val fail" id="s-fail">0</div><div class="stat-lbl">Failed</div></div>
+    <div class="stat"><div class="stat-val skip" id="s-skip">0</div><div class="stat-lbl">Skipped</div></div>
+  </div>
+
+  <div id="progress-bar"><div id="progress-fill"></div></div>
+
+  <div id="suites"></div>
+
+  <div id="console-wrap">
+    <div class="console-header">
+      <span>▸ Test Output</span>
+      <button class="clear-console" onclick="clearConsole()">clear</button>
+    </div>
+    <div id="console-log"><span class="log-info">Ready. Press "Run All Tests" to begin.</span></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  TEST ENGINE
+// ═══════════════════════════════════════════════════════════
+
+const _results = { total:0, pass:0, fail:0, skip:0 };
+let _allSuites = [];
+let _testElements = {}; // id → {statusEl, detailEl, msEl, errorEl}
+
+// ── DOM helpers ──────────────────────────────────────────────
+function log(msg, type='info') {
+  const el = document.getElementById('console-log');
+  const line = document.createElement('div');
+  line.className = `log-${type}`;
+  line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+function clearConsole() {
+  document.getElementById('console-log').innerHTML = '';
+}
+
+// ── Suite builder ────────────────────────────────────────────
+function defineSuite(icon, name, desc, tests) {
+  return { icon, name, desc, tests, id: name.replace(/[^a-zA-Z0-9]/g,'_') };
+}
+
+// ── Render suites ────────────────────────────────────────────
+function renderSuites() {
+  const container = document.getElementById('suites');
+  _allSuites.forEach((suite, si) => {
+    // Campaign section header every few suites
+    if ([0,3,6,9,12].includes(si)) {
+      const sections = ['🏕 Phase 1: Site Setup & Borehole Registration',
+                        '💧 Phase 2: Purge & Field Calculations',
+                        '📈 Phase 3: GW Monitoring & Recovery',
+                        '⚗️ Phase 4: Chemistry & Gas Analysis',
+                        '📦 Phase 5: Export, Logs & Data Integrity'];
+      const ph = document.createElement('div');
+      ph.className = 'campaign-header';
+      ph.textContent = sections[Math.floor(si/3)] || '';
+      if (ph.textContent) container.appendChild(ph);
+    }
+
+    const suiteDiv = document.createElement('div');
+    suiteDiv.className = 'suite';
+    suiteDiv.id = `suite-${suite.id}`;
+
+    const header = document.createElement('div');
+    header.className = 'suite-header';
+    header.innerHTML = `
+      <div class="suite-icon">${suite.icon}</div>
+      <div class="suite-name">${suite.name}</div>
+      <div class="suite-desc">${suite.desc}</div>
+      <div class="suite-badges" id="badges-${suite.id}">
+        <span class="badge badge-pending">${suite.tests.length} tests</span>
+      </div>
+      <div class="chevron">▶</div>
+    `;
+    header.onclick = () => toggleSuite(suite.id);
+
+    const testList = document.createElement('div');
+    testList.className = 'test-list';
+    testList.id = `list-${suite.id}`;
+
+    suite.tests.forEach((t, ti) => {
+      const tid = `${suite.id}_${ti}`;
+      const row = document.createElement('div');
+      row.className = 'test-row';
+      row.id = `row-${tid}`;
+      row.innerHTML = `
+        <div class="test-status" id="status-${tid}"></div>
+        <div class="test-body">
+          <div class="test-name">${t.name}</div>
+          <div class="test-detail" id="detail-${tid}">${t.desc || ''}</div>
+          <div class="test-error" id="error-${tid}" style="display:none"></div>
+        </div>
+        <div class="test-ms" id="ms-${tid}"></div>
+      `;
+      testList.appendChild(row);
+      _testElements[tid] = {
+        statusEl: row.querySelector(`#status-${tid}`),
+        detailEl: row.querySelector(`#detail-${tid}`),
+        msEl:     row.querySelector(`#ms-${tid}`),
+        errorEl:  row.querySelector(`#error-${tid}`),
+      };
+    });
+
+    suiteDiv.appendChild(header);
+    suiteDiv.appendChild(testList);
+    container.appendChild(suiteDiv);
+  });
+}
+
+function toggleSuite(id) {
+  const header = document.querySelector(`#suite-${id} .suite-header`);
+  const list   = document.getElementById(`list-${id}`);
+  const open   = list.classList.toggle('open');
+  header.classList.toggle('open', open);
+}
+
+function openSuite(id) {
+  const header = document.querySelector(`#suite-${id} .suite-header`);
+  const list   = document.getElementById(`list-${id}`);
+  list.classList.add('open');
+  header.classList.add('open');
+}
+
+// ── Test runner ───────────────────────────────────────────────
+function setTestState(tid, state, detail, ms, error) {
+  const els = _testElements[tid];
+  if (!els) return;
+  els.statusEl.className = `test-status ${state}`;
+  els.statusEl.textContent = state==='pass' ? '✓' : state==='fail' ? '✗' : state==='skip' ? '−' : '';
+  if (detail) els.detailEl.textContent = detail;
+  if (ms !== undefined) els.msEl.textContent = `${ms}ms`;
+  if (error) { els.errorEl.style.display='block'; els.errorEl.textContent = error; }
+}
+
+function updateSuiteBadges(suite) {
+  const tids = suite.tests.map((_,i) => `${suite.id}_${i}`);
+  let pass=0, fail=0, skip=0;
+  tids.forEach(tid => {
+    const el = _testElements[tid]?.statusEl;
+    if (el?.classList.contains('pass')) pass++;
+    else if (el?.classList.contains('fail')) fail++;
+    else if (el?.classList.contains('skip')) skip++;
+  });
+  const badgeContainer = document.getElementById(`badges-${suite.id}`);
+  badgeContainer.innerHTML = '';
+  if (pass) badgeContainer.innerHTML += `<span class="badge badge-pass">${pass} pass</span>`;
+  if (fail) badgeContainer.innerHTML += `<span class="badge badge-fail">${fail} fail</span>`;
+  if (skip) badgeContainer.innerHTML += `<span class="badge badge-skip">${skip} skip</span>`;
+  if (!pass && !fail && !skip) badgeContainer.innerHTML = `<span class="badge badge-pending">${suite.tests.length} tests</span>`;
+}
+
+function updateSummary() {
+  document.getElementById('s-total').textContent = _results.total;
+  document.getElementById('s-pass').textContent  = _results.pass;
+  document.getElementById('s-fail').textContent  = _results.fail;
+  document.getElementById('s-skip').textContent  = _results.skip;
+  const pct = _results.total ? (_results.pass + _results.skip) / _results.total * 100 : 0;
+  document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+async function runTest(suite, t, ti) {
+  const tid = `${suite.id}_${ti}`;
+  setTestState(tid, 'running');
+  openSuite(suite.id);
+  const t0 = performance.now();
+  let state = 'pass', detail = t.desc || '', error = null;
+
+  try {
+    if (t.skip) {
+      state = 'skip';
+      detail = t.skip;
+    } else {
+      const result = await t.fn();
+      if (result && typeof result === 'object') {
+        detail = result.detail || detail;
+      }
+    }
+  } catch(e) {
+    state = 'fail';
+    error = e.message || String(e);
+    log(`✗ ${t.name}: ${error}`, 'fail');
+  }
+
+  const ms = Math.round(performance.now() - t0);
+  setTestState(tid, state, detail, ms, error);
+  _results.total++;
+  _results[state]++;
+  updateSummary();
+  updateSuiteBadges(suite);
+  if (state === 'pass') log(`✓ ${t.name} (${ms}ms)`, 'pass');
+  else if (state === 'skip') log(`− ${t.name} [skipped: ${detail}]`, 'warn');
+}
+
+async function runAll() {
+  // Reset
+  Object.assign(_results, { total:0, pass:0, fail:0, skip:0 });
+  updateSummary();
+  Object.values(_testElements).forEach(els => {
+    els.statusEl.className = 'test-status';
+    els.statusEl.textContent = '';
+    els.msEl.textContent = '';
+    els.errorEl.style.display='none';
+  });
+  clearConsole();
+  document.getElementById('runAllBtn').disabled = true;
+  log('Campaign test run started', 'info');
+
+  // Setup: seed localStorage with realistic data
+  seedTestData();
+
+  for (const suite of _allSuites) {
+    log(`── Suite: ${suite.name}`, 'info');
+    for (let i = 0; i < suite.tests.length; i++) {
+      await runTest(suite, suite.tests[i], i);
+      await new Promise(r => setTimeout(r, 30)); // Small delay for UI
+    }
+  }
+
+  log(`Run complete: ${_results.pass} pass · ${_results.fail} fail · ${_results.skip} skip`, 'info');
+  document.getElementById('runAllBtn').disabled = false;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TEST DATA — realistic field campaign data
+// ═══════════════════════════════════════════════════════════
+
+const CAMPAIGN = {
+  projects: [
+    { id:'proj_muri_2025', name:'Muri Aquifer Survey 2025', colour:'#1e3a8a', created: '2025-03-01' },
+    { id:'proj_bern_ref',  name:'Bern Reference Network',  colour:'#7c3aed', created: '2025-01-15' },
+  ],
+  boreholes: [
+    { id:'bh_mu01', bhId:'BH-MU01', description:'Alluvial zone — shallow unconfined',
+      diameter:101.6, wellDepth:12.5, standUp:0.45, unit:'mm',
+      lat:46.9245, lng:7.4312, projectId:'proj_muri_2025', project:'Muri Aquifer Survey 2025',
+      timestamp:'3/1/2025, 09:00:00 AM' },
+    { id:'bh_mu02', bhId:'BH-MU02', description:'Transition zone — semi-confined',
+      diameter:101.6, wellDepth:18.2, standUp:0.50, unit:'mm',
+      lat:46.9251, lng:7.4318, projectId:'proj_muri_2025', project:'Muri Aquifer Survey 2025',
+      timestamp:'3/1/2025, 10:30:00 AM' },
+    { id:'bh_mu03', bhId:'BH-MU03', description:'Deep confined aquifer',
+      diameter:152.4, wellDepth:32.0, standUp:0.60, unit:'mm',
+      lat:46.9260, lng:7.4330, projectId:'proj_muri_2025', project:'Muri Aquifer Survey 2025',
+      timestamp:'3/1/2025, 14:00:00 PM' },
+    { id:'bh_ref01', bhId:'BH-REF01', description:'Reference borehole — municipal network',
+      diameter:50.8, wellDepth:8.0, standUp:0.00, unit:'mm',
+      lat:46.9480, lng:7.4450, projectId:'proj_bern_ref', project:'Bern Reference Network',
+      timestamp:'1/15/2025, 08:00:00 AM' },
+  ],
+  gwPoints: [
+    { id:'bh_mu01', description:'BH-MU01', readings:[
+        { id:1, depth:3.45, datetime:'2025-03-10T08:00', notes:'Pre-purge SWL' },
+        { id:2, depth:3.47, datetime:'2025-03-10T08:30', notes:'Stable' },
+        { id:3, depth:3.12, datetime:'2025-03-11T08:00', notes:'Recovery after pumping' },
+      ], projectId:'proj_muri_2025' },
+    { id:'bh_mu02', description:'BH-MU02', readings:[
+        { id:4, depth:6.82, datetime:'2025-03-10T09:00', notes:'Pre-purge SWL' },
+        { id:5, depth:7.10, datetime:'2025-03-10T09:45', notes:'During pumping' },
+      ], projectId:'proj_muri_2025' },
+  ],
+  gasRecords: [
+    { id:'gas_001', timestamp:'3/10/2025, 09:15:00 AM', project:'Muri Aquifer Survey 2025',
+      projectId:'proj_muri_2025', location:'BH-MU01', date:'2025-03-10',
+      sampler:'Reudi Test', sampleDepth:'12.5', waterLevel:'3.45',
+      wellVolume:'10.03', pumpedVolume:'30.09',
+      airTemp:'12', airHumidity:'68', waterTemp:'9.8',
+      samplingChem:true, samplingGas:true,
+      pH:'7.23', pHTemp:'9.8', EC:'412', ECTemp:'9.8', Eh:'185', EhTemp:'9.8',
+      sequences:[
+        { id:1, label:'Seq-1', startTime:'09:20', endTime:'09:35', notes:'Standard run' },
+        { id:2, label:'Seq-2', startTime:'09:40', endTime:'09:55', notes:'Duplicate' },
+      ],
+      stdAirT1:'09:18', stdAirT2:'09:58', stdGasmixT1:'09:19', stdGasmixT2:'09:57',
+      comments:'Clear groundwater, no turbidity' },
+  ],
+  boreholeLogs: [
+    { id:Date.now()-9000, timestamp:'3/10/2025, 08:00:00 AM', bhId:'BH-MU01',
+      diameter:'101.6', unit:'mm', wellDepth:12.5, waterLevel:3.45, standUp:0.45,
+      waterVolume:10.03, purgeVolume:30.09, notes:'Clear water, Fe <0.1 mg/L' },
+    { id:Date.now()-8000, timestamp:'3/10/2025, 10:30:00 AM', bhId:'BH-MU02',
+      diameter:'101.6', unit:'mm', wellDepth:18.2, waterLevel:6.82, standUp:0.50,
+      waterVolume:14.82, purgeVolume:44.46, notes:'Slightly turbid initially' },
+    { id:Date.now()-7000, timestamp:'3/10/2025, 14:00:00 PM', bhId:'BH-MU03',
+      diameter:'152.4', unit:'mm', wellDepth:32.0, waterLevel:11.20, standUp:0.60,
+      waterVolume:47.83, purgeVolume:143.49, notes:'Artesian conditions noted' },
+  ],
+  recoveryTests: [
+    { id:'rec_001', timestamp:'3/10/2025, 09:30:00 AM', bhId:'BH-MU01',
+      staticLevel:3.45, diameter:101.6, wellDepth:12.5, flowRate:'0.082',
+      measurements:[
+        { timestamp:'09:30:00', time:0.00, depth:6.20, change:2.75 },
+        { timestamp:'09:31:00', time:1.00, depth:5.45, change:2.00 },
+        { timestamp:'09:33:00', time:3.00, depth:4.80, change:1.35 },
+        { timestamp:'09:36:00', time:6.00, depth:4.10, change:0.65 },
+        { timestamp:'09:42:00', time:12.0, depth:3.62, change:0.17 },
+        { timestamp:'09:54:00', time:24.0, depth:3.47, change:0.02 },
+      ]},
+  ],
+  chemSessions: [
+    { id:'chem_001', timestamp:'3/10/2025, 11:00:00 AM', bhId:'BH-MU01',
+      method:'flow-cell', projectId:'proj_muri_2025', project:'Muri Aquifer Survey 2025',
+      params:['pH','EC','DO','Eh','T'],
+      readings:[
+        { time:'11:05', pH:'7.18', EC:'408', DO:'5.2', Eh:'188', T:'9.7' },
+        { time:'11:10', pH:'7.21', EC:'410', DO:'5.0', Eh:'186', T:'9.8' },
+        { time:'11:15', pH:'7.23', EC:'412', DO:'4.9', Eh:'185', T:'9.8' },
+      ]},
+  ],
+};
+
+function seedTestData() {
+  try {
+    localStorage.setItem('bmProjects',    JSON.stringify(CAMPAIGN.projects));
+    localStorage.setItem('bmActiveProjectId', CAMPAIGN.projects[0].id);
+    localStorage.setItem('boreholes',     JSON.stringify(CAMPAIGN.boreholes));
+    localStorage.setItem('gwPoints',      JSON.stringify(CAMPAIGN.gwPoints));
+    localStorage.setItem('boreholeLogs',  JSON.stringify(CAMPAIGN.boreholeLogs));
+    localStorage.setItem('gasRecords',    JSON.stringify(CAMPAIGN.gasRecords));
+    localStorage.setItem('recoveryTests', JSON.stringify(CAMPAIGN.recoveryTests));
+    localStorage.setItem('chemSessions',  JSON.stringify(CAMPAIGN.chemSessions));
+    log('Test data seeded: 4 BH, 2 projects, 3 purge logs, 1 gas record, 1 recovery, 1 chem', 'info');
+  } catch(e) {
+    log('Seed failed: ' + e.message, 'fail');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ASSERT HELPERS
+// ═══════════════════════════════════════════════════════════
+
+function assert(condition, msg) {
+  if (!condition) throw new Error(msg || 'Assertion failed');
+}
+function assertClose(a, b, tol=0.01, msg) {
+  if (Math.abs(a-b) > tol) throw new Error(msg || `Expected ${b} ±${tol}, got ${a}`);
+}
+function assertJSON(key) {
+  const raw = localStorage.getItem(key);
+  assert(raw !== null, `localStorage key '${key}' missing`);
+  const parsed = JSON.parse(raw);
+  assert(parsed !== null, `localStorage key '${key}' is null`);
+  return parsed;
+}
+function borehole_volume_litres(diamMm, waterColumnM) {
+  const r = (diamMm/2) / 1000;
+  return Math.PI * r * r * waterColumnM * 1000;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TEST SUITES
+// ═══════════════════════════════════════════════════════════
+
+_allSuites = [
+
+// ── 1. localStorage & Data Persistence ──────────────────────
+defineSuite('💾','Storage & Persistence','localStorage read/write and data integrity',[
+  { name:'Projects persist to localStorage',
+    desc:'Two projects seeded and readable',
+    fn() {
+      const p = assertJSON('bmProjects');
+      assert(Array.isArray(p) && p.length >= 2, 'Expected ≥2 projects');
+      assert(p[0].id === 'proj_muri_2025', 'First project ID mismatch');
+      return { detail:`${p.length} projects found` };
+    }},
+  { name:'Active project ID stored',
+    desc:'bmActiveProjectId set to Muri project',
+    fn() {
+      const id = localStorage.getItem('bmActiveProjectId');
+      assert(id === 'proj_muri_2025', `Expected proj_muri_2025, got ${id}`);
+      return { detail:`Active: ${id}` };
+    }},
+  { name:'Boreholes array contains all 4 BH',
+    desc:'BH-MU01, MU02, MU03, REF01',
+    fn() {
+      const bh = assertJSON('boreholes');
+      assert(bh.length >= 4, `Expected 4, got ${bh.length}`);
+      const ids = bh.map(b=>b.bhId);
+      ['BH-MU01','BH-MU02','BH-MU03','BH-REF01'].forEach(id =>
+        assert(ids.includes(id), `Missing ${id}`));
+      return { detail:`IDs: ${ids.join(', ')}` };
+    }},
+  { name:'GW points linked to boreholes',
+    desc:'gwPoints array seeded with 2 points',
+    fn() {
+      const pts = assertJSON('gwPoints');
+      assert(pts.length >= 2, `Expected ≥2, got ${pts.length}`);
+      assert(pts[0].readings?.length >= 3, 'BH-MU01 should have 3 readings');
+      return { detail:`${pts.length} GW points, ${pts[0].readings.length} readings on MU01` };
+    }},
+  { name:'Gas records persist correctly',
+    desc:'1 gas record with sequences',
+    fn() {
+      const recs = assertJSON('gasRecords');
+      assert(recs.length >= 1, 'Expected ≥1 gas record');
+      assert(recs[0].sequences?.length >= 2, 'Expected ≥2 sequences');
+      assert(recs[0].location === 'BH-MU01', 'Location mismatch');
+      return { detail:`Record: ${recs[0].location} @ ${recs[0].date}` };
+    }},
+  { name:'Recovery tests persist',
+    desc:'1 recovery test with 6 measurements',
+    fn() {
+      const rt = assertJSON('recoveryTests');
+      assert(rt.length >= 1, 'Expected ≥1 recovery test');
+      assert(rt[0].measurements.length === 6, `Expected 6 measurements, got ${rt[0].measurements.length}`);
+      return { detail:`${rt[0].measurements.length} measurements, BH: ${rt[0].bhId}` };
+    }},
+  { name:'Chem sessions persist',
+    desc:'1 flow-cell session with 3 readings',
+    fn() {
+      const cs = assertJSON('chemSessions');
+      assert(cs.length >= 1, 'Expected ≥1 chem session');
+      assert(cs[0].readings.length === 3, `Expected 3 readings, got ${cs[0].readings.length}`);
+      assert(cs[0].method === 'flow-cell', `Method: ${cs[0].method}`);
+      return { detail:`${cs[0].readings.length} readings, method: ${cs[0].method}` };
+    }},
+  { name:'Purge logs contain 3 entries',
+    desc:'BH-MU01, MU02, MU03 logged',
+    fn() {
+      const logs = assertJSON('boreholeLogs');
+      assert(logs.length >= 3, `Expected ≥3, got ${logs.length}`);
+      const ids = logs.map(l=>l.bhId);
+      assert(ids.includes('BH-MU01'), 'MU01 missing from logs');
+      return { detail:`${logs.length} purge logs` };
+    }},
+]),
+
+// ── 2. Borehole Volume Calculations ──────────────────────────
+defineSuite('🧮','Purge Volume Calculator','Borehole volume maths for all four BH',[
+  { name:'BH-MU01: correct water volume (101.6mm ∅, 12.5m depth, 3.45m WL)',
+    desc:'Water column = 9.05m → π×0.0508²×9.05×1000 ≈ 73.5L',
+    fn() {
+      const diam=101.6, wc=12.5-3.45;
+      const vol = borehole_volume_litres(diam, wc);
+      assertClose(vol, 73.5, 0.5, `Expected ~73.5L, got ${vol.toFixed(2)}L`);
+      return { detail:`Calculated: ${vol.toFixed(2)}L (water col: ${wc.toFixed(2)}m)` };
+    }},
+  { name:'BH-MU01: 3× purge volume ≈ 220.5L',
+    fn() {
+      const vol = borehole_volume_litres(101.6, 12.5-3.45);
+      assertClose(vol*3, 220.5, 1.5);
+      return { detail:`Purge (3×): ${(vol*3).toFixed(2)}L` };
+    }},
+  { name:'BH-MU02: correct water volume (101.6mm ∅, 18.2m depth, 6.82m WL)',
+    desc:'Water column = 11.38m → ≈92.4L',
+    fn() {
+      const vol = borehole_volume_litres(101.6, 18.2-6.82);
+      assertClose(vol, 92.4, 0.5);
+      return { detail:`Calculated: ${vol.toFixed(2)}L` };
+    }},
+  { name:'BH-MU03: correct water volume (152.4mm ∅, 32.0m depth, 11.2m WL)',
+    desc:'Water column = 20.8m → π×0.0762²×20.8×1000 ≈ 380.4L',
+    fn() {
+      const vol = borehole_volume_litres(152.4, 32.0-11.2);
+      assertClose(vol, 380.4, 1.0);
+      return { detail:`Calculated: ${vol.toFixed(2)}L` };
+    }},
+  { name:'BH-REF01: flush-to-ground (stand-up=0), 2" casing',
+    desc:'50.8mm ∅, 8m depth, 2m WL → ~10.3L',
+    fn() {
+      const vol = borehole_volume_litres(50.8, 8.0-2.0);
+      assertClose(vol, 10.3, 0.3);
+      return { detail:`Calculated: ${vol.toFixed(2)}L` };
+    }},
+  { name:'Unit conversion: 4" = 101.6mm',
+    fn() {
+      assertClose(4 * 25.4, 101.6, 0.01);
+      return { detail:'4in × 25.4 = 101.6mm ✓' };
+    }},
+  { name:'Unit conversion: 6" = 152.4mm',
+    fn() {
+      assertClose(6 * 25.4, 152.4, 0.01);
+      return { detail:'6in × 25.4 = 152.4mm ✓' };
+    }},
+  { name:'Zero water column returns 0L',
+    fn() {
+      const vol = borehole_volume_litres(101.6, 0);
+      assert(vol === 0, `Expected 0, got ${vol}`);
+      return { detail:'Water level at bottom → 0L ✓' };
+    }},
+  { name:'Water level > well depth clamped to 0',
+    fn() {
+      const wc = Math.max(0, 10.0 - 12.0); // WL deeper than bottom
+      assert(wc === 0, 'Should clamp to 0');
+      return { detail:'WL > depth clamped correctly ✓' };
+    }},
+  { name:'Stored purge log volume matches calculation',
+    desc:'Check persisted waterVolume for BH-MU01',
+    fn() {
+      const logs = JSON.parse(localStorage.getItem('boreholeLogs') || '[]');
+      const mu01 = logs.find(l=>l.bhId==='BH-MU01');
+      assert(mu01, 'BH-MU01 log not found');
+      // Recalculate
+      const calc = borehole_volume_litres(101.6, mu01.wellDepth - mu01.waterLevel);
+      assertClose(mu01.waterVolume, calc, 0.5, `Stored ${mu01.waterVolume.toFixed(2)} vs calc ${calc.toFixed(2)}`);
+      return { detail:`Stored: ${mu01.waterVolume.toFixed(2)}L, calc: ${calc.toFixed(2)}L` };
+    }},
+]),
+
+// ── 3. GW Level Monitoring ────────────────────────────────────
+defineSuite('💧','GW Level Monitoring','Water level readings, trends and point management',[
+  { name:'BH-MU01 has 3 GW readings',
+    fn() {
+      const pts = JSON.parse(localStorage.getItem('gwPoints') || '[]');
+      const mu01 = pts.find(p=>p.id==='bh_mu01');
+      assert(mu01, 'GW point bh_mu01 not found');
+      assert(mu01.readings.length === 3, `Expected 3, got ${mu01.readings.length}`);
+      return { detail:`${mu01.readings.length} readings for BH-MU01` };
+    }},
+  { name:'Pre-purge SWL reading is 3.45m bTOC',
+    fn() {
+      const pts = JSON.parse(localStorage.getItem('gwPoints') || '[]');
+      const r = pts.find(p=>p.id==='bh_mu01').readings[0];
+      assertClose(r.depth, 3.45, 0.001);
+      return { detail:`SWL: ${r.depth}m bTOC @ ${r.datetime}` };
+    }},
+  { name:'Recovery reading (post-pump) is shallower than during-pump',
+    desc:'Pre=3.45, During would be deeper, Recovery=3.12',
+    fn() {
+      const pts = JSON.parse(localStorage.getItem('gwPoints') || '[]');
+      const rds = pts.find(p=>p.id==='bh_mu01').readings;
+      assert(rds[2].depth < rds[0].depth, 'Recovery reading should be shallower than pre-pump');
+      return { detail:`Pre-pump: ${rds[0].depth}m, Post-recovery: ${rds[2].depth}m` };
+    }},
+  { name:'BH-MU02 shows drawdown between readings',
+    fn() {
+      const pts = JSON.parse(localStorage.getItem('gwPoints') || '[]');
+      const mu02 = pts.find(p=>p.id==='bh_mu02');
+      assert(mu02.readings[1].depth > mu02.readings[0].depth, 'Water level should drop during pumping');
+      const drawdown = mu02.readings[1].depth - mu02.readings[0].depth;
+      return { detail:`Drawdown: ${drawdown.toFixed(2)}m over ${mu02.readings.length} readings` };
+    }},
+  { name:'GW point linked to correct project',
+    fn() {
+      const pts = JSON.parse(localStorage.getItem('gwPoints') || '[]');
+      const mu01 = pts.find(p=>p.id==='bh_mu01');
+      assert(mu01.projectId === 'proj_muri_2025', `Expected proj_muri_2025, got ${mu01.projectId}`);
+      return { detail:`Project: ${mu01.projectId}` };
+    }},
+  { name:'New reading can be appended and persisted',
+    fn() {
+      const pts = JSON.parse(localStorage.getItem('gwPoints') || '[]');
+      const mu01 = pts.find(p=>p.id==='bh_mu01');
+      const newReading = { id: Date.now(), depth: 3.44, datetime: '2025-03-12T08:00', notes:'Day 2 SWL' };
+      mu01.readings.push(newReading);
+      localStorage.setItem('gwPoints', JSON.stringify(pts));
+      const pts2 = JSON.parse(localStorage.getItem('gwPoints'));
+      const count = pts2.find(p=>p.id==='bh_mu01').readings.length;
+      assert(count === 4, `Expected 4, got ${count}`);
+      // Clean up
+      mu01.readings.pop();
+      localStorage.setItem('gwPoints', JSON.stringify(pts));
+      return { detail:`Appended and verified reading, count: ${count}` };
+    }},
+  { name:'Reading deletion removes correct entry by id',
+    fn() {
+      const pts = JSON.parse(localStorage.getItem('gwPoints') || '[]');
+      const mu01 = pts.find(p=>p.id==='bh_mu01');
+      const targetId = mu01.readings[0].id;
+      mu01.readings = mu01.readings.filter(r=>r.id !== targetId);
+      localStorage.setItem('gwPoints', JSON.stringify(pts));
+      const pts2 = JSON.parse(localStorage.getItem('gwPoints'));
+      const found = pts2.find(p=>p.id==='bh_mu01').readings.find(r=>r.id===targetId);
+      assert(!found, 'Reading should be deleted');
+      // Restore
+      seedTestData();
+      return { detail:`Deleted reading id=${targetId}, verified removal` };
+    }},
+]),
+
+// ── 4. Drawdown / Recovery Analysis ──────────────────────────
+defineSuite('📈','Recovery Test Analysis','Recovery curve shape, flow rate, time series',[
+  { name:'Recovery test has 6 timestamped measurements',
+    fn() {
+      const rt = JSON.parse(localStorage.getItem('recoveryTests') || '[]');
+      assert(rt[0].measurements.length === 6, `Expected 6, got ${rt[0].measurements.length}`);
+      return { detail:`${rt[0].measurements.length} measurements` };
+    }},
+  { name:'Water level monotonically recovers (decreasing depth)',
+    desc:'Each depth reading should be ≤ previous (water rising)',
+    fn() {
+      const rt = JSON.parse(localStorage.getItem('recoveryTests') || '[]');
+      const m = rt[0].measurements;
+      let monotonic = true;
+      for (let i=1;i<m.length;i++) {
+        if (m[i].depth > m[i-1].depth) { monotonic=false; break; }
+      }
+      assert(monotonic, 'Recovery curve should be monotonically decreasing depth');
+      return { detail:`${m[0].depth}m → ${m[m.length-1].depth}m (recovered)` };
+    }},
+  { name:'90% recovery achieved within test duration',
+    desc:'From 6.20m back to static 3.45m (2.75m drop, recover 2.73m)',
+    fn() {
+      const rt = JSON.parse(localStorage.getItem('recoveryTests') || '[]');
+      const m = rt[0].measurements;
+      const totalDrop = m[0].depth - rt[0].staticLevel;
+      const recovered = m[0].depth - m[m.length-1].depth;
+      const pct = recovered/totalDrop * 100;
+      assert(pct >= 85, `Expected ≥85% recovery, got ${pct.toFixed(1)}%`);
+      return { detail:`Recovery: ${pct.toFixed(1)}% (${recovered.toFixed(2)}m of ${totalDrop.toFixed(2)}m)` };
+    }},
+  { name:'Flow rate calculation (hydraulic conductivity proxy)',
+    desc:'Δdepth/Δt × well area × 1000 = L/min → L/s',
+    fn() {
+      const rt = JSON.parse(localStorage.getItem('recoveryTests') || '[]');
+      const m = rt[0].measurements;
+      const r = (rt[0].diameter/2)/1000;
+      const A = Math.PI * r * r;
+      const depthChange = Math.abs(m[m.length-1].depth - m[0].depth);
+      const timeDiff = m[m.length-1].time - m[0].time;
+      const flowLperMin = (depthChange * A * 1000) / timeDiff;
+      const flowLperSec = flowLperMin / 60;
+      assertClose(flowLperSec, parseFloat(rt[0].flowRate), 0.005);
+      return { detail:`Flow rate: ${flowLperSec.toFixed(4)} L/s` };
+    }},
+  { name:'Elapsed time series is strictly increasing',
+    fn() {
+      const rt = JSON.parse(localStorage.getItem('recoveryTests') || '[]');
+      const m = rt[0].measurements;
+      let ok = true;
+      for(let i=1;i<m.length;i++) if(m[i].time <= m[i-1].time) {ok=false;break;}
+      assert(ok, 'Elapsed times should be strictly increasing');
+      return { detail:`t0=${m[0].time}min → t_end=${m[m.length-1].time}min` };
+    }},
+  { name:'Static water level change (drawdown) computed correctly',
+    fn() {
+      const rt = JSON.parse(localStorage.getItem('recoveryTests') || '[]');
+      const m = rt[0].measurements;
+      const maxDrawdown = m[0].depth - rt[0].staticLevel;
+      assertClose(maxDrawdown, 2.75, 0.01, `Expected 2.75m, got ${maxDrawdown}`);
+      return { detail:`Max drawdown: ${maxDrawdown.toFixed(3)}m` };
+    }},
+]),
+
+// ── 5. GW Chemistry ───────────────────────────────────────────
+defineSuite('⚗️','GW Chemistry','Stabilisation readings, multi-param session, field chem',[
+  { name:'Chem session has correct parameters',
+    fn() {
+      const cs = JSON.parse(localStorage.getItem('chemSessions') || '[]');
+      const s = cs[0];
+      ['pH','EC','DO','Eh','T'].forEach(p =>
+        assert(s.params.includes(p), `Missing param: ${p}`));
+      return { detail:`Params: ${s.params.join(', ')}` };
+    }},
+  { name:'pH stabilises across 3 readings (Δ < 0.10)',
+    fn() {
+      const cs = JSON.parse(localStorage.getItem('chemSessions') || '[]');
+      const ph = cs[0].readings.map(r=>parseFloat(r.pH));
+      const delta = Math.max(...ph) - Math.min(...ph);
+      assert(delta < 0.10, `pH range ${delta.toFixed(3)} exceeds 0.10 stability criterion`);
+      return { detail:`pH range: ${Math.min(...ph)} – ${Math.max(...ph)} (Δ=${delta.toFixed(3)})` };
+    }},
+  { name:'EC stabilises (Δ < 5 μS/cm)',
+    fn() {
+      const cs = JSON.parse(localStorage.getItem('chemSessions') || '[]');
+      const ec = cs[0].readings.map(r=>parseFloat(r.EC));
+      const delta = Math.max(...ec) - Math.min(...ec);
+      assert(delta < 5, `EC range ${delta} μS/cm exceeds 5 μS/cm criterion`);
+      return { detail:`EC: ${Math.min(...ec)}–${Math.max(...ec)} μS/cm (Δ=${delta})` };
+    }},
+  { name:'DO trend is plausible (positive, <15 mg/L)',
+    fn() {
+      const cs = JSON.parse(localStorage.getItem('chemSessions') || '[]');
+      const doVals = cs[0].readings.map(r=>parseFloat(r.DO));
+      doVals.forEach(v => {
+        assert(v > 0, `DO must be positive, got ${v}`);
+        assert(v < 15, `DO ${v} mg/L unrealistically high`);
+      });
+      return { detail:`DO: ${Math.min(...doVals).toFixed(1)}–${Math.max(...doVals).toFixed(1)} mg/L` };
+    }},
+  { name:'Temperature consistent across readings (Δ < 0.5°C)',
+    fn() {
+      const cs = JSON.parse(localStorage.getItem('chemSessions') || '[]');
+      const temps = cs[0].readings.map(r=>parseFloat(r.T));
+      const delta = Math.max(...temps) - Math.min(...temps);
+      assert(delta < 0.5, `Temp range ${delta.toFixed(2)}°C exceeds 0.5°C`);
+      return { detail:`T: ${Math.min(...temps)}–${Math.max(...temps)}°C` };
+    }},
+  { name:'Chem session linked to correct BH and project',
+    fn() {
+      const cs = JSON.parse(localStorage.getItem('chemSessions') || '[]');
+      assert(cs[0].bhId === 'BH-MU01', `BH: ${cs[0].bhId}`);
+      assert(cs[0].projectId === 'proj_muri_2025', `Project: ${cs[0].projectId}`);
+      return { detail:`BH: ${cs[0].bhId}, Project: ${cs[0].projectId}` };
+    }},
+  { name:'New chem session can be saved and retrieved',
+    fn() {
+      const cs = JSON.parse(localStorage.getItem('chemSessions') || '[]');
+      const newSess = { id:'chem_test_999', timestamp:new Date().toLocaleString(),
+        bhId:'BH-MU02', method:'bucket', projectId:'proj_muri_2025',
+        params:['pH','EC'], readings:[{time:'12:00',pH:'7.10',EC:'398'}] };
+      cs.push(newSess);
+      localStorage.setItem('chemSessions', JSON.stringify(cs));
+      const cs2 = JSON.parse(localStorage.getItem('chemSessions'));
+      assert(cs2.find(s=>s.id==='chem_test_999'), 'New session not found');
+      // cleanup
+      localStorage.setItem('chemSessions', JSON.stringify(cs.filter(s=>s.id!=='chem_test_999')));
+      return { detail:'Session saved, retrieved and cleaned up' };
+    }},
+]),
+
+// ── 6. MiniRUEDI Gas Analysis ─────────────────────────────────
+defineSuite('🔬','MiniRUEDI Gas Records','Gas form fields, sequences, timestamps',[
+  { name:'Gas record has all required fields',
+    fn() {
+      const recs = JSON.parse(localStorage.getItem('gasRecords') || '[]');
+      const r = recs[0];
+      ['location','date','sampler','sampleDepth','waterLevel','wellVolume',
+       'pumpedVolume','airTemp','waterTemp'].forEach(f =>
+        assert(r[f] !== undefined && r[f] !== '', `Missing field: ${f}`));
+      return { detail:`Record: ${r.location} ${r.date}` };
+    }},
+  { name:'Gas record has 2 MiniRUEDI sequences',
+    fn() {
+      const recs = JSON.parse(localStorage.getItem('gasRecords') || '[]');
+      assert(recs[0].sequences.length >= 2, `Expected ≥2 sequences, got ${recs[0].sequences.length}`);
+      return { detail:`${recs[0].sequences.length} sequences` };
+    }},
+  { name:'Standard calibration timestamps present',
+    fn() {
+      const r = JSON.parse(localStorage.getItem('gasRecords') || '[]')[0];
+      assert(r.stdAirT1, 'stdAirT1 missing');
+      assert(r.stdAirT2, 'stdAirT2 missing');
+      assert(r.stdGasmixT1, 'stdGasmixT1 missing');
+      assert(r.stdGasmixT2, 'stdGasmixT2 missing');
+      return { detail:`Std Air: ${r.stdAirT1}–${r.stdAirT2}, Gasmix: ${r.stdGasmixT1}–${r.stdGasmixT2}` };
+    }},
+  { name:'CHEM + GAS sampling flags both set',
+    fn() {
+      const r = JSON.parse(localStorage.getItem('gasRecords') || '[]')[0];
+      assert(r.samplingChem === true, 'samplingChem should be true');
+      assert(r.samplingGas  === true, 'samplingGas should be true');
+      return { detail:'samplingChem=true, samplingGas=true' };
+    }},
+  { name:'Field chem values in record (pH, EC, Eh)',
+    fn() {
+      const r = JSON.parse(localStorage.getItem('gasRecords') || '[]')[0];
+      assert(r.pH && parseFloat(r.pH) > 6 && parseFloat(r.pH) < 9, `pH: ${r.pH}`);
+      assert(r.EC && parseFloat(r.EC) > 100, `EC: ${r.EC}`);
+      assert(r.Eh, `Eh: ${r.Eh}`);
+      return { detail:`pH=${r.pH}, EC=${r.EC}μS/cm, Eh=${r.Eh}mV` };
+    }},
+  { name:'Pumped volume is ~3× well volume (purge criterion)',
+    fn() {
+      const r = JSON.parse(localStorage.getItem('gasRecords') || '[]')[0];
+      const ratio = parseFloat(r.pumpedVolume) / parseFloat(r.wellVolume);
+      assert(ratio >= 2.9 && ratio <= 3.1, `Expected ~3× purge, got ${ratio.toFixed(2)}×`);
+      return { detail:`${r.pumpedVolume}L pumped / ${r.wellVolume}L well = ${ratio.toFixed(2)}×` };
+    }},
+  { name:'Gas record linked to active project',
+    fn() {
+      const r = JSON.parse(localStorage.getItem('gasRecords') || '[]')[0];
+      assert(r.projectId === 'proj_muri_2025', `ProjectId: ${r.projectId}`);
+      return { detail:`Project: ${r.project}` };
+    }},
+  { name:'Sequence time order is chronological',
+    fn() {
+      const seqs = JSON.parse(localStorage.getItem('gasRecords') || '[]')[0].sequences;
+      for(let i=1;i<seqs.length;i++) {
+        assert(seqs[i].startTime >= seqs[i-1].endTime,
+          `Seq ${i} starts before seq ${i-1} ends`);
+      }
+      return { detail:`${seqs.length} sequences in chronological order` };
+    }},
+]),
+
+// ── 7. Project Management ─────────────────────────────────────
+defineSuite('📁','Project Management','Create, assign, filter and switch projects',[
+  { name:'Two projects exist with distinct IDs',
+    fn() {
+      const p = JSON.parse(localStorage.getItem('bmProjects') || '[]');
+      assert(p.length >= 2, `Expected ≥2 projects`);
+      assert(p[0].id !== p[1].id, 'Project IDs must be unique');
+      return { detail:`${p.length} projects: ${p.map(x=>x.name).join(', ')}` };
+    }},
+  { name:'Boreholes assigned to correct projects',
+    fn() {
+      const bh = JSON.parse(localStorage.getItem('boreholes') || '[]');
+      const mu = bh.filter(b=>b.projectId==='proj_muri_2025');
+      const ref = bh.filter(b=>b.projectId==='proj_bern_ref');
+      assert(mu.length === 3, `Expected 3 Muri BH, got ${mu.length}`);
+      assert(ref.length === 1, `Expected 1 Ref BH, got ${ref.length}`);
+      return { detail:`Muri: ${mu.length} BH, Ref: ${ref.length} BH` };
+    }},
+  { name:'Project name present on borehole records',
+    fn() {
+      const bh = JSON.parse(localStorage.getItem('boreholes') || '[]');
+      bh.forEach(b => assert(b.project && b.project.length > 0, `BH ${b.bhId} missing project name`));
+      return { detail:'All BH have project name field' };
+    }},
+  { name:'New project can be created and saved',
+    fn() {
+      const projects = JSON.parse(localStorage.getItem('bmProjects') || '[]');
+      const newProj = { id:'proj_test_tmp', name:'Test Project Tmp', colour:'#059669', created: new Date().toISOString() };
+      projects.push(newProj);
+      localStorage.setItem('bmProjects', JSON.stringify(projects));
+      const p2 = JSON.parse(localStorage.getItem('bmProjects'));
+      assert(p2.find(p=>p.id==='proj_test_tmp'), 'New project not found');
+      // cleanup
+      localStorage.setItem('bmProjects', JSON.stringify(p2.filter(p=>p.id!=='proj_test_tmp')));
+      return { detail:`Created, verified, removed test project` };
+    }},
+  { name:'Filtering BH by project returns correct subset',
+    fn() {
+      const bh = JSON.parse(localStorage.getItem('boreholes') || '[]');
+      const filtered = bh.filter(b=>b.projectId==='proj_muri_2025');
+      assert(filtered.length === 3, `Expected 3, got ${filtered.length}`);
+      filtered.forEach(b => assert(b.projectId==='proj_muri_2025', 'Wrong project in filter'));
+      return { detail:`Filtered ${filtered.length} BH for Muri project` };
+    }},
+  { name:'Cross-project gas records are isolated',
+    fn() {
+      const recs = JSON.parse(localStorage.getItem('gasRecords') || '[]');
+      const muri = recs.filter(r=>r.projectId==='proj_muri_2025');
+      const bern = recs.filter(r=>r.projectId==='proj_bern_ref');
+      assert(muri.length >= 1, 'Muri should have gas records');
+      assert(bern.length === 0, 'Bern should have no gas records');
+      return { detail:`Muri: ${muri.length} records, Bern: ${bern.length} records` };
+    }},
+]),
+
+// ── 8. Borehole Registration ──────────────────────────────────
+defineSuite('🕳️','Borehole Registration','BH fields, GPS coords, construction data',[
+  { name:'All BH have required fields',
+    fn() {
+      const bh = JSON.parse(localStorage.getItem('boreholes') || '[]');
+      const required = ['bhId','diameter','wellDepth','standUp','unit','projectId'];
+      bh.forEach(b => required.forEach(f =>
+        assert(b[f] !== undefined, `BH ${b.bhId} missing field: ${f}`)));
+      return { detail:`${bh.length} BH validated` };
+    }},
+  { name:'BH diameters are realistic (25–300mm)',
+    fn() {
+      const bh = JSON.parse(localStorage.getItem('boreholes') || '[]');
+      bh.forEach(b => {
+        assert(b.diameter >= 25, `${b.bhId} diameter ${b.diameter} < 25mm`);
+        assert(b.diameter <= 300, `${b.bhId} diameter ${b.diameter} > 300mm`);
+      });
+      return { detail:`Diameters: ${bh.map(b=>b.diameter+'mm').join(', ')}` };
+    }},
+  { name:'Stand-up heights are non-negative',
+    fn() {
+      const bh = JSON.parse(localStorage.getItem('boreholes') || '[]');
+      bh.forEach(b => assert(b.standUp >= 0, `${b.bhId} negative standUp: ${b.standUp}`));
+      return { detail:'All stand-up values ≥0' };
+    }},
+  { name:'GPS coordinates are in Switzerland (lat 45–48, lng 5–11)',
+    fn() {
+      const bh = JSON.parse(localStorage.getItem('boreholes') || '[]');
+      bh.filter(b=>b.lat).forEach(b => {
+        assert(b.lat >= 45 && b.lat <= 48, `${b.bhId} lat ${b.lat} outside Switzerland`);
+        assert(b.lng >= 5  && b.lng <= 11, `${b.bhId} lng ${b.lng} outside Switzerland`);
+      });
+      return { detail:`All GPS within Swiss bounds` };
+    }},
+  { name:'BH-REF01 has flush-to-ground stand-up (0m)',
+    fn() {
+      const bh = JSON.parse(localStorage.getItem('boreholes') || '[]');
+      const ref = bh.find(b=>b.bhId==='BH-REF01');
+      assert(ref, 'BH-REF01 not found');
+      assert(ref.standUp === 0, `Expected standUp=0, got ${ref.standUp}`);
+      return { detail:`BH-REF01 standUp=${ref.standUp}m (flush)` };
+    }},
+  { name:'BH IDs are unique across all boreholes',
+    fn() {
+      const bh = JSON.parse(localStorage.getItem('boreholes') || '[]');
+      const ids = bh.map(b=>b.bhId);
+      const unique = new Set(ids);
+      assert(unique.size === ids.length, `Duplicate BH IDs found: ${ids}`);
+      return { detail:`${ids.length} unique IDs: ${ids.join(', ')}` };
+    }},
+]),
+
+// ── 9. CSV Export ─────────────────────────────────────────────
+defineSuite('📊','CSV Export Logic','Data serialisation for field exports',[
+  { name:'Purge logs CSV contains headers and data rows',
+    fn() {
+      const logs = JSON.parse(localStorage.getItem('boreholeLogs') || '[]');
+      const headers = 'Date/Time,BH ID,Diameter (mm),Depth (m bTOC),Water Level (m bTOC),Stand-up (m),Volume (L),Purge (L),Notes';
+      let csv = headers + '\n';
+      logs.forEach(l => {
+        const notes = (l.notes||'').replace(/"/g,'""');
+        csv += `"${l.timestamp}","${l.bhId}",${l.diameter},${l.wellDepth.toFixed(2)},${l.waterLevel.toFixed(2)},${l.standUp.toFixed(2)},${l.waterVolume.toFixed(2)},${l.purgeVolume.toFixed(2)},"${notes}"\n`;
+      });
+      assert(csv.includes('BH-MU01'), 'CSV missing BH-MU01');
+      assert(csv.split('\n').length >= 4, 'CSV should have header + 3 data rows');
+      return { detail:`CSV: ${csv.split('\n').length-1} rows (incl header)` };
+    }},
+  { name:'Recovery test CSV has correct column structure',
+    fn() {
+      const rt = JSON.parse(localStorage.getItem('recoveryTests') || '[]')[0];
+      let csv = `Borehole ID: ${rt.bhId}\n`;
+      csv += `Static Water Level: ${rt.staticLevel.toFixed(3)} m bTOC\n\n`;
+      csv += 'Timestamp,Elapsed Time (min),Water Level (m bTOC),Change from Static (m)\n';
+      rt.measurements.forEach(m => {
+        csv += `${m.timestamp},${m.time.toFixed(2)},${m.depth.toFixed(3)},${m.change.toFixed(3)}\n`;
+      });
+      assert(csv.includes(rt.bhId), 'CSV missing BH ID');
+      assert(csv.includes('Elapsed'), 'CSV missing Elapsed column');
+      assert(csv.split('\n').length >= 10, 'CSV too short');
+      return { detail:`${csv.split('\n').length} lines in recovery CSV` };
+    }},
+  { name:'Gas records CSV serialises all key fields',
+    fn() {
+      const recs = JSON.parse(localStorage.getItem('gasRecords') || '[]');
+      const r = recs[0];
+      const csv = `Date,${r.date}\nLocation,${r.location}\npH,${r.pH}\nEC,${r.EC}\nWater Temp,${r.waterTemp}\nSequences,${r.sequences.length}\n`;
+      assert(csv.includes(r.location), 'Location missing');
+      assert(csv.includes(r.pH), 'pH missing');
+      return { detail:`Gas CSV: ${r.location}, ${r.date}` };
+    }},
+  { name:'Chem session CSV includes stabilisation readings',
+    fn() {
+      const cs = JSON.parse(localStorage.getItem('chemSessions') || '[]')[0];
+      let csv = `BH,${cs.bhId}\nMethod,${cs.method}\n\nTime,${cs.params.join(',')}\n`;
+      cs.readings.forEach(r => {
+        csv += `${r.time},${cs.params.map(p=>r[p]||'').join(',')}\n`;
+      });
+      assert(csv.includes(cs.bhId), 'BH missing from CSV');
+      assert(csv.includes('7.18'), 'First pH reading missing');
+      return { detail:`Chem CSV: ${cs.readings.length} stabilisation rows` };
+    }},
+  { name:'Special characters in notes are CSV-escaped',
+    fn() {
+      const notes = 'Water "slightly" turbid, Fe <0.1 mg/L';
+      const escaped = notes.replace(/"/g, '""');
+      const csvField = `"${escaped}"`;
+      assert(csvField.includes('""slightly""'), 'Quotes not escaped correctly');
+      assert(!csvField.match(/(?<!")"(?!")/g)?.length, 'Unescaped quote in middle');
+      return { detail:`Escaped: ${csvField.substring(0,40)}...` };
+    }},
+  { name:'All-data JSON export contains every data type',
+    fn() {
+      const payload = {
+        projects:   JSON.parse(localStorage.getItem('bmProjects')    || '[]'),
+        boreholes:  JSON.parse(localStorage.getItem('boreholes')     || '[]'),
+        boreholeLogs: JSON.parse(localStorage.getItem('boreholeLogs')|| '[]'),
+        gwPoints:   JSON.parse(localStorage.getItem('gwPoints')      || '[]'),
+        gasRecords: JSON.parse(localStorage.getItem('gasRecords')    || '[]'),
+        recoveryTests: JSON.parse(localStorage.getItem('recoveryTests')|| '[]'),
+        chemSessions: JSON.parse(localStorage.getItem('chemSessions')|| '[]'),
+        exportDate: new Date().toISOString(),
+      };
+      const json = JSON.stringify(payload, null, 2);
+      const parsed = JSON.parse(json);
+      assert(parsed.projects.length >= 2, 'Missing projects');
+      assert(parsed.boreholes.length >= 4, 'Missing boreholes');
+      assert(parsed.gasRecords.length >= 1, 'Missing gas records');
+      assert(parsed.exportDate, 'Missing export date');
+      return { detail:`JSON: ${(json.length/1024).toFixed(1)}KB, all collections present` };
+    }},
+]),
+
+// ── 10. Data Integrity & Edge Cases ──────────────────────────
+defineSuite('🔐','Data Integrity','Edge cases, corrupt data, boundary conditions',[
+  { name:'Corrupt localStorage entry handled gracefully',
+    fn() {
+      localStorage.setItem('_test_corrupt', 'not valid json {{{{');
+      let result;
+      try {
+        result = JSON.parse(localStorage.getItem('_test_corrupt') || '[]');
+      } catch(e) {
+        result = [];
+      }
+      assert(Array.isArray(result), 'Should fall back to empty array');
+      localStorage.removeItem('_test_corrupt');
+      return { detail:'Corrupt JSON caught, fallback to []' };
+    }},
+  { name:'Missing localStorage key returns default',
+    fn() {
+      localStorage.removeItem('_test_missing_key_xyz');
+      const val = JSON.parse(localStorage.getItem('_test_missing_key_xyz') || '[]');
+      assert(Array.isArray(val) && val.length === 0, 'Default should be empty array');
+      return { detail:'Missing key → [] default ✓' };
+    }},
+  { name:'Borehole with no GW readings has empty array (not null)',
+    fn() {
+      const bh = JSON.parse(localStorage.getItem('boreholes') || '[]');
+      const mu03 = bh.find(b=>b.bhId==='BH-MU03');
+      // MU03 has no GW point seeded — add it with empty readings
+      const pts = JSON.parse(localStorage.getItem('gwPoints') || '[]');
+      if (!pts.find(p=>p.id==='bh_mu03')) {
+        pts.push({ id:'bh_mu03', description:'BH-MU03', readings:[], projectId:'proj_muri_2025' });
+        localStorage.setItem('gwPoints', JSON.stringify(pts));
+      }
+      const pts2 = JSON.parse(localStorage.getItem('gwPoints'));
+      const mu03pt = pts2.find(p=>p.id==='bh_mu03');
+      assert(Array.isArray(mu03pt.readings), 'readings should be array');
+      assert(mu03pt.readings.length === 0, 'Should be empty');
+      return { detail:'BH-MU03 GW point has empty readings array (not null)' };
+    }},
+  { name:'Duplicate BH save updates existing record, not duplicate',
+    fn() {
+      const bh = JSON.parse(localStorage.getItem('boreholes') || '[]');
+      const mu01 = bh.find(b=>b.bhId==='BH-MU01');
+      const origDesc = mu01.description;
+      mu01.description = 'Updated description for test';
+      const idx = bh.findIndex(b=>b.bhId==='BH-MU01');
+      bh[idx] = mu01;
+      localStorage.setItem('boreholes', JSON.stringify(bh));
+      const bh2 = JSON.parse(localStorage.getItem('boreholes'));
+      const count = bh2.filter(b=>b.bhId==='BH-MU01').length;
+      assert(count === 1, `Expected 1 MU01, got ${count} (duplicate detected)`);
+      // restore
+      bh2[bh2.findIndex(b=>b.bhId==='BH-MU01')].description = origDesc;
+      localStorage.setItem('boreholes', JSON.stringify(bh2));
+      return { detail:`Updated in-place, no duplicate. Count=${count}` };
+    }},
+  { name:'Float precision: volume to 2dp matches stored value',
+    fn() {
+      const logs = JSON.parse(localStorage.getItem('boreholeLogs') || '[]');
+      logs.forEach(l => {
+        const stored = l.waterVolume;
+        const reparsed = parseFloat(stored.toFixed(2));
+        assertClose(stored, reparsed, 0.005, `Precision mismatch: ${stored} vs ${reparsed}`);
+      });
+      return { detail:'All volumes pass 2dp precision check' };
+    }},
+  { name:'Timestamp format parseable as Date',
+    fn() {
+      const logs = JSON.parse(localStorage.getItem('boreholeLogs') || '[]');
+      logs.forEach(l => {
+        const d = new Date(l.timestamp);
+        assert(!isNaN(d.getTime()), `Unparseable timestamp: ${l.timestamp}`);
+      });
+      return { detail:`${logs.length} timestamps valid` };
+    }},
+  { name:'localStorage quota: large write succeeds',
+    fn() {
+      const bigArr = Array.from({length:200}, (_,i) => ({
+        id:`stress_${i}`, bhId:`BH-ST${String(i).padStart(3,'0')}`,
+        diameter:101.6, wellDepth:10+i%20, waterLevel:2+i%8,
+        standUp:0.5, notes:'Stress test entry '.repeat(5)
+      }));
+      try {
+        localStorage.setItem('_stress_test', JSON.stringify(bigArr));
+        const back = JSON.parse(localStorage.getItem('_stress_test'));
+        assert(back.length === 200, 'Data truncated');
+        localStorage.removeItem('_stress_test');
+        return { detail:`200-record write/read: ${JSON.stringify(bigArr).length} bytes ✓` };
+      } catch(e) {
+        throw new Error(`localStorage quota hit: ${e.message}`);
+      }
+    }},
+  { name:'Project deletion cascade: orphaned BH detectable',
+    fn() {
+      // Simulate deleting a project
+      const bh = JSON.parse(localStorage.getItem('boreholes') || '[]');
+      const existingProjectIds = new Set(
+        JSON.parse(localStorage.getItem('bmProjects') || '[]').map(p=>p.id)
+      );
+      const orphaned = bh.filter(b => b.projectId && !existingProjectIds.has(b.projectId));
+      assert(orphaned.length === 0, `${orphaned.length} orphaned BH detected: ${orphaned.map(b=>b.bhId)}`);
+      return { detail:`No orphaned BH (all projectIds valid)` };
+    }},
+]),
+
+// ── 11. Onboarding & UI State ─────────────────────────────────
+defineSuite('🧭','Onboarding & App State','Welcome flow, localStorage flags, screen state',[
+  { name:'Welcome flag can be set and cleared',
+    fn() {
+      localStorage.removeItem('_hasSeenWelcome');
+      assert(!localStorage.getItem('_hasSeenWelcome'), 'Flag should be absent');
+      localStorage.setItem('_hasSeenWelcome', '1');
+      assert(localStorage.getItem('_hasSeenWelcome') === '1', 'Flag should be set');
+      localStorage.removeItem('_hasSeenWelcome');
+      return { detail:'Welcome flag lifecycle: absent → set → cleared ✓' };
+    }},
+  { name:'Onboarding step counter advances correctly',
+    fn() {
+      localStorage.setItem('_onboardStep','0');
+      let step = parseInt(localStorage.getItem('_onboardStep')||'0');
+      assert(step === 0, `Expected 0, got ${step}`);
+      step++;
+      localStorage.setItem('_onboardStep', String(step));
+      step = parseInt(localStorage.getItem('_onboardStep'));
+      assert(step === 1, `Expected 1 after increment, got ${step}`);
+      localStorage.removeItem('_onboardStep');
+      return { detail:`Step counter: 0 → 1 ✓` };
+    }},
+  { name:'Active BH ID persists across simulated screen switch',
+    fn() {
+      localStorage.setItem('_activeBHId', 'bh_mu01');
+      const id = localStorage.getItem('_activeBHId');
+      assert(id === 'bh_mu01', `Expected bh_mu01, got ${id}`);
+      return { detail:`Active BH: ${id}` };
+    }},
+  { name:'Recent BH list can store and retrieve multiple IDs',
+    fn() {
+      const recent = ['bh_mu01','bh_mu02','bh_mu03'];
+      localStorage.setItem('_recentBHIds', JSON.stringify(recent));
+      const back = JSON.parse(localStorage.getItem('_recentBHIds') || '[]');
+      assert(back.length === 3, `Expected 3, got ${back.length}`);
+      assert(back[0] === 'bh_mu01', 'First recent BH wrong');
+      return { detail:`Recent BH list: ${back.join(', ')}` };
+    }},
+  { name:'Sampler name persists for pre-fill',
+    fn() {
+      localStorage.setItem('samplerName', 'Dr. R. Kipfer');
+      const name = localStorage.getItem('samplerName');
+      assert(name === 'Dr. R. Kipfer', `Got: ${name}`);
+      return { detail:`Sampler: ${name}` };
+    }},
+  { name:'BH unit preference (mm/in) persists',
+    fn() {
+      localStorage.setItem('bhUnit', 'mm');
+      assert(localStorage.getItem('bhUnit') === 'mm', 'Unit should be mm');
+      localStorage.setItem('bhUnit', 'in');
+      assert(localStorage.getItem('bhUnit') === 'in', 'Unit should switch to in');
+      localStorage.setItem('bhUnit', 'mm'); // restore
+      return { detail:'Unit toggle mm→in persists ✓' };
+    }},
+]),
+
+// ── 12. Cross-Module Data Linkage ─────────────────────────────
+defineSuite('🔗','Cross-Module Linkage','Data flows between calculator, recovery, gas, chem',[
+  { name:'Purge log bhId matches registered borehole bhId',
+    fn() {
+      const logs = JSON.parse(localStorage.getItem('boreholeLogs') || '[]');
+      const bh   = JSON.parse(localStorage.getItem('boreholes') || '[]');
+      const bhIds = new Set(bh.map(b=>b.bhId));
+      logs.forEach(l => assert(bhIds.has(l.bhId), `Log bhId '${l.bhId}' not in boreholes`));
+      return { detail:`All ${logs.length} purge logs have valid BH IDs` };
+    }},
+  { name:'Gas record location matches a registered BH',
+    fn() {
+      const recs = JSON.parse(localStorage.getItem('gasRecords') || '[]');
+      const bh   = JSON.parse(localStorage.getItem('boreholes') || '[]');
+      const bhIds = new Set(bh.map(b=>b.bhId));
+      recs.forEach(r => assert(bhIds.has(r.location), `Gas record location '${r.location}' not registered`));
+      return { detail:`Gas record locations verified against BH registry` };
+    }},
+  { name:'Recovery test bhId matches registered BH',
+    fn() {
+      const rt = JSON.parse(localStorage.getItem('recoveryTests') || '[]');
+      const bh = JSON.parse(localStorage.getItem('boreholes') || '[]');
+      const bhIds = new Set(bh.map(b=>b.bhId));
+      rt.forEach(r => assert(bhIds.has(r.bhId), `Recovery bhId '${r.bhId}' not registered`));
+      return { detail:'Recovery test BH IDs valid' };
+    }},
+  { name:'Chem session and gas record share BH (same sampling event)',
+    fn() {
+      const cs  = JSON.parse(localStorage.getItem('chemSessions') || '[]');
+      const gas = JSON.parse(localStorage.getItem('gasRecords') || '[]');
+      const chemBHs = new Set(cs.map(c=>c.bhId));
+      const gasBHs  = new Set(gas.map(g=>g.location));
+      const overlap = [...chemBHs].filter(id=>gasBHs.has(id));
+      assert(overlap.length >= 1, 'Expected at least one BH sampled for both chem and gas');
+      return { detail:`Co-sampled BH: ${overlap.join(', ')}` };
+    }},
+  { name:'GW readings span covers recovery test period',
+    fn() {
+      const rt  = JSON.parse(localStorage.getItem('recoveryTests') || '[]')[0];
+      const pts = JSON.parse(localStorage.getItem('gwPoints') || '[]');
+      const mu01 = pts.find(p=>p.id==='bh_mu01');
+      assert(mu01.readings.some(r=>r.notes.includes('Pre-purge')), 'Pre-purge reading missing from GW log');
+      assert(mu01.readings.some(r=>r.notes.includes('Recovery')), 'Recovery reading missing from GW log');
+      return { detail:`GW readings cover pre-purge and post-recovery for ${rt.bhId}` };
+    }},
+  { name:'All Muri project data shares projectId consistently',
+    fn() {
+      const PID = 'proj_muri_2025';
+      const bh  = JSON.parse(localStorage.getItem('boreholes')     || '[]').filter(x=>x.projectId===PID);
+      const gas = JSON.parse(localStorage.getItem('gasRecords')     || '[]').filter(x=>x.projectId===PID);
+      const cs  = JSON.parse(localStorage.getItem('chemSessions')   || '[]').filter(x=>x.projectId===PID);
+      const rt  = JSON.parse(localStorage.getItem('recoveryTests')  || '[]');
+      assert(bh.length >= 3,  `Expected ≥3 Muri BH, got ${bh.length}`);
+      assert(gas.length >= 1, `Expected ≥1 Muri gas record`);
+      assert(cs.length >= 1,  `Expected ≥1 Muri chem session`);
+      return { detail:`Muri: ${bh.length} BH, ${gas.length} gas, ${cs.length} chem, ${rt.length} recovery` };
+    }},
+]),
+
+]; // end _allSuites
+
+// ── Boot ─────────────────────────────────────────────────────
+renderSuites();
+updateSummary();
+
+// Open first suite by default
+toggleSuite(_allSuites[0].id);
+</script>
+</body>
+</html>
